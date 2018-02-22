@@ -1,0 +1,105 @@
+---
+title: "Project Proposal"
+author: "Tom Kennon"
+date: "February 20, 2018"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+The goal of this project is to determine if there is a limit for an NBA player's free throw percentage in a season.  Free throws are one of the most unique opportunities in sports where a player is given a "free" uncontested attempt to score.  Ideally, a player should make every free chance they get by shooting 100% of their free throws, yet no NBA player has ever completed this feat for a whole season.  With NBA players shooting better and better each season as of recently,  a burning question for many NBA fans is: Is it possible to achieve a perfect free throw season making every shot one takes?  I will use extreme value theory estimation to determine the best conceivable free throw percentage for an NBA player in a season.
+
+The dataset was taken from Basketball Reference (https://www.basketball-reference.com/).  This website is a comprehensive source for various statistics in basketball's history, most specifically the NBA.  I pulled the top 10 NBA individual players' free throw percentages for each season from 1947-2017 (80 seasons total).   Here is a preview of the dataset:
+
+```{r data, echo=FALSE}
+bdat <- read.csv("C:/Users/Tom Kennon/Documents/UCONN/STATS Research Jun Yan/ft10.csv",header=TRUE, sep=",")
+#free throw percentages
+head(bdat[1:8])
+```
+
+I have begun exploratory analysis on this dataset.  Here is a plot of the top 5 free throw percentages from each of the 80 NBA seasons in this dataset.
+
+
+```{r dplyr, echo=FALSE,include=FALSE}
+g_dat <- bdat[c(1,4,6,8,10,12,14,16,18,20,22)]
+library(dplyr)
+```
+
+```{r tsplot, echo=FALSE}
+g_dat <- g_dat %>% arrange(-row_number())
+
+ts.plot(g_dat[2:6], gpars = list(col = c("black", "red", "blue","green","yellow")),ylab="Free Throw Percentage",xlab="Season")
+title("Top 5 Free Throw Percentage Performers")
+legend("bottomright",legend=c("First","Second","Third","Fourth","Fifth"),
+       fill=c("black", "red", "blue","green","yellow"))
+abline(v = 7, lty = 2,col="purple")
+```
+
+When the NBA first began in the late 1940s to early 1950s, players were still adjusting to the league's rules so there is a rapid improvement in NBA free throw percentages that is unlikely to happen again.  However, there is still a slight,fairly stable improvement in free throw percentages from then onward.  My goal is to model this upward trend and determine if there is a top limit besides the obvious 1.00.  I will attempt to use the generalized extreme value (gev) distribution.
+
+The pdf is defined as:
+$f(x) =  \frac{1}{\sigma} \left(1+\xi \frac{x-\mu}{\sigma} \right)^{-\frac{1}{\xi}-1}e^{-\left(1+\xi \frac{x-\mu}{\sigma} \right)^{-\frac{1}{\xi}}}$.
+
+The generalized extreme value (gev) distribution takes three parameters: location $\mu(t)$, scale $\sigma$, and shape $\xi$.  The location parameter depends on time (how many seasons we use).  This is the key parameter to model.  I plan on using and evaluating the fit of various non-linear implementations for this location parameter including a splines approximation and a gompertz curve.
+
+
+The splines approximation approach uses the {splines2} package written by Wenjie Wang and Jun Yan.  This technique takess in a degrees of freedom value and number of knots to approximate a polynomial curve.  I can fit a splines matrix as the location parameter $\mu(t)$ of the gev distribution to fit to the free throw data.  Below is the splines fitting to the top 1 NBA free throw percentage of each season.
+
+```{r splines, echo=FALSE}
+library(splines2)
+library(eva)
+library(Matrix)
+
+df <- 6
+
+lines1 <- iSpline(1:73, df) #all positive values
+lines1 <- as.data.frame(lines1)
+names(lines1) <- paste0("x",1:df)
+setwd("C:/Users/Tom Kennon/Documents/UCONN/STATS UG Thesis Research/R Code")
+source("functions.R")
+splines_fit_nloc <- gevr_fit_nloc(g_dat[8:80,2], locvars = lines1,
+                                  locform = ~ x1 + x2 + x3 + x4 + x5 + x6)
+
+plot(rate <- as.matrix(lines1) %*% splines_fit_nloc$par.ests[2:(df+1)]
+     + splines_fit_nloc$par.ests[1],ylab="Free Throw Percentage",xlab="Season")
+title("Splines Fit to the Top Free Throw Percentage Each NBA Season")
+```
+
+
+
+
+The gompertz approach uses the gompertz function defined as:
+$f(t)= ae^{-be^{(-ct)}} + z$ which is a function of time $t$.  $a$ is an asymptote, $b$ describes where the curve is placed on the x axis , $c$ is the growth rate, and z is the intercept.  I can fit a gompertz curve as the location parameter $\mu(t)$ of the gev distribution to fit to the free throw data.  Below is an example of a gompertz function implemented as the location parameter in the gev distribution fitted to the NBA free throw data.
+
+```{r gom, echo=FALSE,include=FALSE}
+time <- as.numeric(1:length(rate))
+gom_guesses <- c(z=0.876104,a=0.46, b=12, c=0.1)
+lapply(gom_guesses,as.numeric)
+
+nls_model <- nls ( rate ~ z + a*exp(-b*exp(-c*time)),trace=TRUE,start=gom_guesses)
+nls_model
+plot(rate <- as.matrix(lines1) %*% splines_fit_nloc$par.ests[2:(df+1)]
+     + splines_fit_nloc$par.ests[1], ylim = c(0.86,0.925))
+#curve(gompertz(x, theta=coef(nls_model)), col="red", add=TRUE)
+
+splines_fit_nloc$par.ests[(df+2):(df+3)]
+# Output: scale = 1.979034e-02, shape = -2.725918e-01
+
+init <- c(coef(nls_model),splines_fit_nloc$par.ests[df+2],splines_fit_nloc$par.ests[df+3])
+
+
+top1 <- cbind(g_dat[2])
+mle <- optim(init,gevrloglik, data=top1, control=list(fnscale=-1, trace=TRUE, maxit=999))
+```
+
+```{r gompertz, echo=FALSE}
+ts.plot(g_dat[8:80,2], ylab="Free Throw Percentage",xlab="Season")
+title("Top 5 Free Throw Percentage Performers")
+curve(gompertz(x, theta=mle$par), col="purple", add=TRUE)
+```
+
+
+I will then evaluate the estimated limit on NBA free throw percentage in an NBA season including confidence intervals.  I will compare the different approaches and evaluate the fits.  I will then interpret what these results mean for NBA fans.
