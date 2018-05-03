@@ -1,0 +1,969 @@
+---
+title: "Analysis"
+author: "Tom Kennon"
+date: '`r format(Sys.time(), ''%d %B %Y'')`'
+output:
+  html_document: default
+  pdf_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+```{r data}
+setwd("C:/Users/Tom Kennon/Documents/UCONN/STATS UG Thesis Research/R Code/Undergraduate-Thesis-Research")
+
+bdat <- read.csv("ft10.csv",header=TRUE, sep=",")
+# free throw percentages
+
+bdat <- bdat[bdat$Lg=="NBA",]
+
+g_dat <- bdat[c(1,4,6,8,10,12,14,16,18,20,22)]
+library(dplyr)
+g_dat <- g_dat %>% arrange(-row_number())
+
+ts.plot(g_dat[2:6], gpars = list(col = c("black", "red", "blue","green","yellow"))
+        ,ylab="Free Throw Percentage",xlab="Season")
+title("Top 5 Free Throw Percentage Performers")
+legend("bottomright",legend=c("First","Second","Third","Fourth","Fifth"),
+       fill=c("black", "red", "blue","green","yellow"))
+
+```
+
+```{r gomft}
+##################
+####Gompertzft####
+##################
+
+setwd("C:/Users/Tom Kennon/Documents/UCONN/STATS UG Thesis Research/R Code/Undergraduate-Thesis-Research")
+
+bdat <- read.csv("ft10.csv",header=TRUE, sep=",")
+#free throw percentages
+
+bdat <- bdat[bdat$Lg=="NBA",]
+
+g_dat <- bdat[c(1,4,6,8,10,12,14,16,18,20,22)]
+library(dplyr)
+g_dat <- g_dat %>% arrange(-row_number())
+
+
+
+library(splines2)
+library(eva)
+library(Matrix)
+
+df <- 6
+
+lines1 <- iSpline(1:68, df) #all positive values
+lines1 <- as.data.frame(lines1)
+names(lines1) <- paste0("x",1:df)
+
+source("functions.R")
+
+splines_fit_nloc <- gevr_fit_nloc(g_dat[1:68,2], locvars = lines1,
+                                  locform = ~ x1 + x2 + x3 + x4 + x5 + x6)
+#splines_fit_nloc$par.ests #all location values are pos.
+## Location (Intercept)          Location x1          Location x2          Location x3 
+##         0.8708062325         0.0126327948         0.0206960408         0.0169531688 
+##          Location x4          Location x5          Location x6    Scale (Intercept) 
+##         0.0021670871         0.0028668688         0.0001270271         0.0238878742 
+##    Shape (Intercept) 
+##        -0.3948611535
+
+
+plot(rate <- as.matrix(lines1) %*% splines_fit_nloc$par.ests[2:(df+1)]
+     + splines_fit_nloc$par.ests[1])
+
+
+# My guess at parameter values
+curve(0.86 + .06* exp(-7.5 * exp(-.1*x)),0, 73, add=TRUE, col="red")
+
+time <- as.numeric(1:length(rate))
+
+gom_guesses <- c(z=0.86,a=0.06, b=7.5, c=0.1)
+lapply(gom_guesses,as.numeric)
+
+
+nls_model <- nls ( rate ~ z + a*exp(-b*exp(-c*time)),trace=TRUE,start=gom_guesses)
+nls_model
+## Nonlinear regression model
+##   model: rate ~ z + a * exp(-b * exp(-c * time))
+##    data: parent.frame()
+##       z       a       b       c 
+## 0.86731 0.06079 3.33199 0.06822 
+##  residual sum-of-squares: 2.031e-06
+## 
+## Number of iterations to convergence: 6 
+## Achieved convergence tolerance: 4.435e-07
+
+
+
+plot(rate <- as.matrix(lines1) %*% splines_fit_nloc$par.ests[2:(df+1)]
+     + splines_fit_nloc$par.ests[1], ylim = c(0.86,0.93))
+curve(gompertz(x, theta=coef(nls_model)), col="red", add=TRUE)
+
+splines_fit_nloc$par.ests[(df+2):(df+3)]
+## Scale (Intercept) Shape (Intercept) 
+##        0.02388787       -0.39486115
+
+
+init <- c(coef(nls_model),splines_fit_nloc$par.ests[df+2],splines_fit_nloc$par.ests[df+3])
+
+
+top1 <- cbind(g_dat[1:68,2])
+mle <- optim(init,gevrloglik, data=top1, control=list(fnscale=-1, trace=TRUE, maxit=999))
+mle$par
+##                 z                 a                 b                 c Scale (Intercept) 
+##        0.86731433        0.06078819        3.33198822        0.06822180        0.02388787 
+## Shape (Intercept) 
+##       -0.35321130
+
+
+ts.plot(g_dat[1:68,2], ylab="Free Throw Percentage",xlab="Season")
+title("NBA FT (Gompertz)")
+curve(gompertz(x, theta=mle$par), col="purple", add=TRUE)
+
+
+gom_limit_ft <- mle$par[1]+mle$par[2] - mle$par[5]/mle$par[6]; gom_limit_ft
+## 0.996
+
+library(dplyr)
+
+set.seed(12345)
+#gom_values_ft <- sim_param(r=1,boots=1750,data=g_dat[1:68,2],obs_par=mle$par); gom_values_ft
+#gom_values_ft = as.data.frame(gom_values_ft)
+#gom_values_ft <- gom_values_ft[!gom_values_ft$V9==1,]
+#gom_values_ft <- head(gom_values_ft,n=1000)
+#write.csv(gom_values_ft,"gom_values_ft.csv")
+gom_values_ft <- read.csv("gom_values_ft.csv")
+gom_values_ft <- gom_values_ft[,-1]
+gom_values_ft <- mutate(gom_values_ft, limit = V1 + V2 - V5/V6)
+
+gom_limits_ft <- gom_values_ft$limit
+gom_limits_ft <- gom_limits_ft[sort.list(gom_limits_ft)]
+
+gom_lb_ft <- gom_limits_ft[25]; gom_lb_ft
+## 0.9687259
+
+gom_ub_ft <- gom_limits_ft[975]; gom_ub_ft
+## 1
+
+
+
+
+
+mle$value # gompertz loglikelihood fitting
+## 163.8742
+
+test0 = mle$value
+
+length(gom_values_ft$V7[gom_values_ft$V7 >= test0])/nrow(gom_values_ft) # approx. pvalue
+## 0.415
+
+hist(values$V7,main="Histogram of Simulated Loglikelihoods",xlab="Loglikelihoods")
+abline(v = mle$value, lty = 2,col="purple")
+
+time = 1:68
+mu <- gompertz(time, mle$par[1:4])
+non_loc_data = g_dat[1:68,2] - mu
+
+ks = ks.test(non_loc_data,pgev,scale=mle$par[5],shape=mle$par[6]); ks
+ks$statistic
+## 0.139061
+
+length(gom_values_ft$V8[gom_values_ft$V8 >= ks$statistic])/nrow(gom_values_ft) # approx. pvalue
+## 0.415
+
+hist(gom_values_ft$V8,main="NBA FT (Gompertz): Histogram of KS Statistics",xlab="KS Statistics")
+abline(v = ks$statistic, lty = 2,col="purple")
+
+```
+
+
+```{r ftconstant}
+###################
+####ft Constant####
+###################
+
+setwd("C:/Users/Tom Kennon/Documents/UCONN/STATS UG Thesis Research/R Code/Undergraduate-Thesis-Research")
+
+bdat <- read.csv("ft10.csv",header=TRUE, sep=",")
+#free throw percentages
+
+bdat <- bdat[bdat$Lg=="NBA",]
+
+g_dat <- bdat[c(1,4,6,8,10,12,14,16,18,20,22)]
+library(dplyr)
+g_dat <- g_dat %>% arrange(-row_number())
+
+#g_dat[2] <- (g_dat[2])^(2)
+
+library(splines2)
+library(eva)
+library(Matrix)
+
+source("functions.R")
+
+
+mle2 <- gevrFit(g_dat[27:68,2], method = "mle") #only stationary part of the data
+mle2
+
+
+top1 <- cbind(g_dat[27:68,2])
+avg <- mean(g_dat[27:68,2])
+mle <- optim(c(avg,0.01,-0.1377),
+             gevrloglik_const, data=top1, control=list(fnscale=-1, trace=TRUE, maxit=999))
+mle$par
+##                 mu       Scale (Intercept)     Shape (Intercept)
+##        0.91471260              0.01836103           -0.23636212
+
+
+
+ts.plot(g_dat[27:68,2], ylab="Free Throw Percentage",xlab="Season")
+title("NBA FT (Constant)")
+abline(h=mle$par[1], col="purple")
+
+
+limit <- mle$par[1] - mle$par[2]/mle$par[3]; limit
+## 0.9923944 
+
+library(dplyr)
+
+set.seed(12345)
+#con_values_ft <- sim_param_constant2(r=1,boots=1250,data=g_dat[27:68,2],obs_par=mle$par); con_values_ft
+#con_values_ft = as.data.frame(con_values_ft)
+#con_values_ft <- con_values_ft[!con_values_ft$V6==1,]
+#con_values_ft <- head(con_values_ft,n=1000)
+#write.csv(con_values_ft,"con_values_ft.csv")
+con_values_ft <- read.csv("con_values_ft.csv")
+con_values_ft <- con_values_ft[,-1]
+con_values_ft <- mutate(con_values_ft, limit = V1 - V2/V3)
+
+con_limits_ft <- con_values_ft$limit
+con_limits_ft <- con_limits_ft[sort.list(con_limits_ft)]
+
+con_lb_ft <- con_limits_ft[25]; con_lb_ft
+## 0.9515981
+
+con_ub_ft <- con_limits_ft[975]; con_ub_ft
+## 1
+
+#limit <- (mle$par.ests[1] - mle$par.ests[2]/mle$par.ests[3])^(1/2); limit
+
+
+
+
+mle$value # constant loglikelihood fitting
+## 106.0102
+
+test0 = mle$value
+
+length(con_values_ft$V4[con_values_ft$V4 >= test0])/nrow(con_values_ft) # approx. pvalue
+## 0.402
+
+hist(con_values_ft$V4,main="Histogram of Simulated Loglikelihoods",xlab="Loglikelihoods")
+abline(v = mle$value, lty = 2,col="purple")
+
+mu <- mle$par[1]
+non_loc_data = g_dat[27:68,2] - mu
+
+ks = ks.test(non_loc_data,pgev,scale=mle$par[2],shape=mle$par[3]); ks
+ks$statistic
+## 0.1260032
+
+length(con_values_ft$V5[con_values_ft$V5 >= ks$statistic])/nrow(con_values_ft) # approx. pvalue
+## 0.919
+
+hist(con_values_ft$V5,main="NBA FT (Constant): Histogram of KS Statistics",xlab="KS Statistics")
+abline(v = ks$statistic, lty = 2,col="purple")
+
+```
+
+```{r top3ftgom}
+#########################
+####Top 3 ft Gompertz####
+#########################
+
+setwd("C:/Users/Tom Kennon/Documents/UCONN/STATS UG Thesis Research/R Code/Undergraduate-Thesis-Research")
+
+bdat <- read.csv("ft10.csv",header=TRUE, sep=",")
+#free throw percentages
+
+bdat <- bdat[bdat$Lg=="NBA",]
+
+g_dat <- bdat[c(1,4,6,8,10,12,14,16,18,20,22)]
+library(dplyr)
+g_dat <- g_dat %>% arrange(-row_number())
+
+
+
+library(splines2)
+library(eva)
+library(Matrix)
+
+df <- 6
+
+lines1 <- iSpline(1:68, df) #all positive values
+lines1 <- as.data.frame(lines1)
+names(lines1) <- paste0("x",1:df)
+
+source("functions.R")
+
+splines_fit_nloc <- gevr_fit_nloc(g_dat[1:68,2:4], locvars = lines1,
+                                  locform = ~ x1 + x2 + x3 + x4 + x5 + x6)
+#splines_fit_nloc$par.ests #all location values are pos.
+## Location (Intercept)          Location x1          Location x2          Location x3 
+##         8.719896e-01         6.217385e-03         2.164180e-02         2.652640e-02 
+##          Location x4          Location x5          Location x6    Scale (Intercept) 
+##         6.491648e-04         2.968156e-03         1.129181e-06         2.265565e-02 
+##    Shape (Intercept) 
+##        -3.952965e-01
+
+
+plot(rate <- as.matrix(lines1) %*% splines_fit_nloc$par.ests[2:(df+1)]
+     + splines_fit_nloc$par.ests[1])
+
+
+# My guess at parameter values
+curve(0.86 + .06* exp(-7.5 * exp(-.1*x)),0, 73, add=TRUE, col="red")
+
+time <- as.numeric(1:length(rate))
+
+gom_guesses <- c(z=0.86,a=0.06, b=7.5, c=0.1)
+lapply(gom_guesses,as.numeric)
+
+
+nls_model <- nls ( rate ~ z + a*exp(-b*exp(-c*time)),trace=TRUE,start=gom_guesses)
+nls_model
+## Nonlinear regression model
+##   model: rate ~ z + a * exp(-b * exp(-c * time))
+##    data: parent.frame()
+##       z       a       b       c 
+## 0.87189 0.06056 5.53163 0.07543 
+##  residual sum-of-squares: 8.891e-06
+## 
+## Number of iterations to convergence: 6 
+## Achieved convergence tolerance: 6.505e-07
+
+
+
+plot(rate <- as.matrix(lines1) %*% splines_fit_nloc$par.ests[2:(df+1)]
+     + splines_fit_nloc$par.ests[1], ylim = c(0.86,0.93))
+curve(gompertz(x, theta=coef(nls_model)), col="red", add=TRUE)
+
+splines_fit_nloc$par.ests[(df+2):(df+3)]
+## Scale (Intercept) Shape (Intercept) 
+##        0.02265565       -0.39529647
+
+
+init <- c(coef(nls_model),splines_fit_nloc$par.ests[df+2],splines_fit_nloc$par.ests[df+3])
+
+
+top3 <- cbind(g_dat[1:68,2:4])
+mle <- optim(init,gevrloglik, data=top3, control=list(fnscale=-1, trace=TRUE, maxit=999))
+mle$par
+##                 z                 a                 b                 c Scale (Intercept) 
+##        0.87189285        0.06056206        5.53162775        0.07542787        0.02265565 
+## Shape (Intercept) 
+##       -0.36072380
+
+
+ts.plot(g_dat[1:68,2:4], ylab="Free Throw Percentage",xlab="Season")
+title("NBA FT Top3 (Gompertz)")
+curve(gompertz(x, theta=mle$par), col=c("purple"), add=TRUE)
+
+
+
+gom_limit_ft_top3 <- mle$par[1]+mle$par[2] - mle$par[5]/mle$par[6]; gom_limit_ft_top3
+## 0.995
+
+library(dplyr)
+
+set.seed(12345)
+#gom_values_ft_top3 <- sim_param2(r=3,boots=1750,data=g_dat[1:68,2:4],obs_par=mle$par); gom_values_ft_top3
+#gom_values_ft_top3 = as.data.frame(gom_values_ft_top3)
+#gom_values_ft_top3 <- gom_values_ft_top3[!gom_values_ft_top3$V9==1,]
+#gom_values_ft_top3 <- head(gom_values_ft_top3,n=1000)
+#write.csv(gom_values_ft_top3,"gom_values_ft_top3.csv")
+gom_values_ft_top3 <- read.csv("gom_values_ft_top3.csv")
+gom_values_ft_top3 <- gom_values_ft_top3[,-1]
+gom_values_ft_top3 <- mutate(gom_values_ft_top3, limit = V1 + V2 - V5/V6)
+
+gom_limits_ft_top3 <- gom_values_ft_top3$limit
+gom_limits_ft_top3 <- gom_limits_ft_top3[sort.list(gom_limits_ft_top3)]
+
+gom_lb_ft_top3 <- gom_limits_ft_top3[25]; gom_lb_ft_top3
+## 0.9745179
+
+gom_ub_ft_top3 <- gom_limits_ft_top3[975]; gom_ub_ft_top3
+## 1
+
+
+
+
+
+mle$value # gompertz loglikelihood fitting
+## 625.1386
+
+test0 = mle$value
+
+length(gom_values_ft_top3$V7[gom_values_ft_top3$V7 >= test0])/nrow(gom_values_ft_top3) # approx. pvalue
+## 0.022
+
+hist(values$V7,main="Histogram of Simulated Loglikelihoods",xlab="Loglikelihoods")
+abline(v = mle$value, lty = 2,col="purple")
+
+time = 1:68
+mu <- gompertz(time, mle$par[1:4])
+non_loc_data = g_dat[1:68,2:4] - mu
+
+ks = ks.test(non_loc_data,pgev,scale=mle$par[5],shape=mle$par[6]); ks
+ks$statistic
+## 0.4226147
+
+length(gom_values_ft_top3$V8[gom_values_ft_top3$V8 >= ks$statistic])/nrow(gom_values_ft_top3) # approx. pvalue
+## 0.421
+
+hist(gom_values_ft_top3$V8,main="NBA FT Top3 (Gompertz): Histogram of KS Statistics",xlab="KS Statistics")
+abline(v = ks$statistic, lty = 2,col="purple")
+
+
+```
+
+```{r top3ftconstant}
+########################
+####top3 ft Constant####
+########################
+
+
+setwd("C:/Users/Tom Kennon/Documents/UCONN/STATS UG Thesis Research/R Code/Undergraduate-Thesis-Research")
+
+bdat <- read.csv("ft10.csv",header=TRUE, sep=",")
+#free throw percentages
+
+bdat <- bdat[bdat$Lg=="NBA",]
+
+g_dat <- bdat[c(1,4,6,8,10,12,14,16,18,20,22)]
+library(dplyr)
+g_dat <- g_dat %>% arrange(-row_number())
+
+#g_dat[2] <- (g_dat[2])^(2)
+
+library(splines2)
+library(eva)
+library(Matrix)
+
+source("functions.R")
+
+
+
+mle2 <- gevrFit(g_dat[27:68,2:4], method = "mle") #only stationary part of the data
+mle2
+
+mle <- gevrFit(g_dat[27:68,2:4], method = "mle") #only stationary part of the data
+mle
+## Summary of fit:
+##                       Estimate Std. Error  z value   Pr(>|z|)    
+## Location (Intercept)  0.919132  0.0025552 359.7034 0.0000e+00 ***
+## Scale (Intercept)     0.018797  0.0011962  15.7142 1.2096e-55 ***
+## Shape (Intercept)    -0.231549  0.0577846  -4.0071 6.1469e-05 ***
+
+
+### Round shape to -0.24
+#mle$par.ests[3] = -0.24
+
+g_dat <- g_dat %>% mutate(avg = (perc1+perc2+perc3)/3)
+
+top3 <- cbind(g_dat[27:68,2:4])
+avg <- mean(g_dat[27:68,12])
+mle <- optim(c(avg,0.018797,-0.231549),
+             gevrloglik_const, data=top3, control=list(fnscale=-1, trace=TRUE, maxit=999))
+mle$par
+
+
+
+
+ts.plot(g_dat[27:68,2:4], ylab="Free Throw Percentage",xlab="Season")
+title("NBA FT Top3 (Constant)")
+abline(h=mle$par.ests[1], col="purple")
+
+
+con_limit_ft_top3 <- mle$par.ests[1] - mle$par.ests[2]/mle$par.ests[3]; con_limit_ft_top3
+## 0.9974528
+## with eva it's 1.000311
+
+
+library(dplyr)
+
+matdat <- g_dat[27:68,2:4]
+matdat <- as.matrix(matdat)
+
+set.seed(12345)
+gevrPbScore(matdat, bootnum = 1000)
+
+con_values_ft_top3 <- sim_param_constant3(r=3,boots=1200,data=g_dat[27:68,2:4],obs_par=param)
+con_values_ft_top3
+
+#con_values_ft_top3 = as.data.frame(con_values_ft_top3)
+#con_values_ft <- con_values_ft[!con_values_ft$V6==1,]
+#con_values_ft <- head(con_values_ft,n=1000)
+#write.csv(con_values_ft,"con_values_ft.csv")
+con_values_ft <- read.csv("con_values_ft.csv")
+con_values_ft <- con_values_ft[,-1]
+con_values_ft <- mutate(con_values_ft, limit = V1 - V2/V3)
+
+con_limits_ft <- con_values_ft$limit
+con_limits_ft <- con_limits_ft[sort.list(con_limits_ft)]
+
+con_lb_ft <- con_limits_ft[25]; con_lb_ft
+## 0.9515981
+
+con_ub_ft <- con_limits_ft[975]; con_ub_ft
+## 1
+
+#limit <- (mle$par.ests[1] - mle$par.ests[2]/mle$par.ests[3])^(1/2); limit
+
+
+
+
+mle$value # constant loglikelihood fitting
+## 106.0102
+
+test0 = mle$value
+
+length(con_values_ft$V4[con_values_ft$V4 >= test0])/nrow(con_values_ft) # approx. pvalue
+## 0.402
+
+hist(con_values_ft$V4,main="Histogram of Simulated Loglikelihoods",xlab="Loglikelihoods")
+abline(v = mle$value, lty = 2,col="purple")
+
+mu <- mle$par[1]
+non_loc_data = g_dat[27:68,2:4] - mu
+
+ks = ks.test(non_loc_data,pgev,scale=mle$par[2],shape=mle$par[3]); ks
+ks$statistic
+## 0.1260032
+
+length(con_values_ft$V5[con_values_ft$V5 >= ks$statistic])/nrow(con_values_ft) # approx. pvalue
+## 0.919
+
+hist(con_values_ft$V5,main="NBA FT (Constant): Histogram of KS Statistics",xlab="KS Statistics")
+abline(v = ks$statistic, lty = 2,col="purple")
+
+```
+
+
+
+
+```{r constant3pt}
+###################
+####Constant3pt####
+###################
+
+setwd("C:/Users/Tom Kennon/Documents/UCONN/STATS UG Thesis Research/R Code/Undergraduate-Thesis-Research")
+
+bdat <- read.csv("3pt10.csv",header=TRUE, sep=",")
+#free throw percentages
+
+bdat <- bdat[bdat$Lg=="NBA",]
+
+g_dat <- bdat[c(1,4,6,8,10,12,14,16,18,20,22)]
+library(dplyr)
+g_dat <- g_dat %>% arrange(-row_number())
+g_dat <- g_dat[-(1:6),]
+
+
+
+
+library(splines2)
+library(eva)
+library(Matrix)
+
+source("functions.R")
+
+mle <- gevrFit(g_dat[2], method = "mle") #only stationary part of the data
+mle
+## Summary of fit:
+##                      Estimate Std. Error   z value   Pr(>|z|)    
+## Location (Intercept) 0.466969  0.0037078 125.94092 0.0000e+00 ***
+## Scale (Intercept)    0.018726  0.0027126   6.90341 5.0769e-12 ***
+## Shape (Intercept)    0.031339  0.1251885   0.25034 8.0233e-01    
+## ---
+## Signif. codes:  0 '***' 0.001 '*' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+
+#shape is 0.3 so positive
+
+top1 <- cbind(g_dat[1:68,2])
+avg <- mean(g_dat[1:68,2])
+mle <- optim(c(0.466969,0.018726,0.031339),
+             gevrloglik_const, data=top1, control=list(fnscale=-1, trace=TRUE, maxit=999))
+mle$par
+
+
+
+ts.plot(g_dat[1:32,2], ylab="3 Pt Percentage",xlab="Season")
+title("NBA 3pt (Constant)")
+abline(h=mle$par.ests[1], col="purple")
+
+
+
+
+library(dplyr)
+
+set.seed(12345)
+#con_values_3pt <- sim_param_constant(r=1,boots=2500,data=g_dat[1:38,2],obs_par=mle$par.ests); con_values_3pt
+#con_values_3pt = as.data.frame(con_values_3pt)
+#con_values_3pt <- con_values_3pt[con_values_3pt$V3>0,]
+#con_values_3pt <- mutate(con_values_3pt, limit = V1 - V2/V3)
+#con_values_3pt = con_values_3pt[con_values_3pt$limit>0,]
+
+#con_values_3pt <- head(con_values_3pt,n=1000)
+#write.csv(con_values_3pt,"con_values_3pt.csv")
+con_values_3pt <- read.csv("con_values_3pt.csv")
+con_values_3pt <- con_values_3pt[,-1]
+con_values_3pt <- mutate(con_values_3pt, limit = V1 - V2/V3)
+
+con_limits_3pt <- con_values_3pt$limit
+con_limits_3pt <- con_limits_3pt[sort.list(con_limits_3pt)]
+
+con_lb_3pt <- con_limits_3pt[25]; con_lb_3pt
+## 0.04459326
+
+con_ub_3pt <- con_limits_3pt[975]; con_ub_3pt
+## 0.4270739
+
+#limit <- (mle$par.ests[1] - mle$par.ests[2]/mle$par.ests[3])^10; limit
+
+con_limit_3pt <- mle$par.ests[1] - mle$par.ests[2]/mle$par.ests[3]; con_limit_3pt
+## -0.1305688
+## con_limits_3pt[500] is 0.3254304
+
+
+mle$nllh.final # constant loglikelihood fitting
+## -76.0434
+
+test0 = mle$nllh.final
+
+length(values$V4[values$V4 >= test0])/nrow(values) # approx. pvalue
+## 0.354
+
+hist(values$V4,main="Histogram of Simulated Loglikelihoods",xlab="Loglikelihoods")
+abline(v = mle$nllh.final, lty = 2,col="purple")
+
+plot(limits,main="Plot of Simulated Limits",xlab="Limits",ylim=c(-1,1))
+abline(h = 1, lty = 1,col="red")
+abline(h = limit, lty = 2,col="purple")
+
+
+mu <- mle$par.ests[1]
+non_loc_data = g_dat[1:38,2] - mu
+
+ks = ks.test(non_loc_data,pgev,scale=mle$par.ests[2],shape=mle$par.ests[3]); ks
+ks$statistic
+## 0.07216941
+
+length(con_values_3pt$V5[con_values_3pt$V5 >= ks$statistic])/nrow(con_values_3pt) # approx. pvalue
+## 0.989
+
+hist(con_values_3pt$V5,main="NBA 3pt (Constant): Histogram of KS Statistics",xlab="KS Statistics")
+abline(v = ks$statistic, lty = 2,col="purple")
+
+```
+
+
+
+```{r gom2pt}
+###################
+####Gompertz2pt####
+###################
+
+setwd("C:/Users/Tom Kennon/Documents/UCONN/STATS UG Thesis Research/R Code/Undergraduate-Thesis-Research")
+
+bdat <- read.csv("2pt10.csv",header=TRUE, sep=",")
+#free throw percentages
+
+bdat <- bdat[bdat$Lg=="NBA",]
+
+g_dat <- bdat[c(1,4,6,8,10,12,14,16,18,20,22)]
+library(dplyr)
+g_dat <- g_dat %>% arrange(-row_number())
+
+
+
+library(splines2)
+library(eva)
+library(Matrix)
+
+df <- 6
+
+lines1 <- iSpline(1:68, df) #all positive values
+lines1 <- as.data.frame(lines1)
+names(lines1) <- paste0("x",1:df)
+
+source("functions.R")
+
+splines_fit_nloc <- gevr_fit_nloc(g_dat[1:68,2], locvars = lines1,
+                                  locform = ~ x1 + x2 + x3 + x4 + x5 + x6)
+#splines_fit_nloc$par.ests #all location values are pos.
+## Location (Intercept)          Location x1          Location x2          Location x3 
+##         3.963512e-01         1.850168e-01         1.816283e-05         4.067857e-09 
+##          Location x4          Location x5          Location x6    Scale (Intercept) 
+##         5.685693e-03         2.833599e-10         4.550365e-02         6.302430e-02 
+##    Shape (Intercept) 
+##        -4.069295e-01
+
+
+plot(rate <- as.matrix(lines1) %*% splines_fit_nloc$par.ests[2:(df+1)]
+     + splines_fit_nloc$par.ests[1])
+
+
+# My guess at parameter values
+curve(0.40 + .2* exp(-7.5 * exp(-.2*x)),0, 73, add=TRUE, col="red")
+
+time <- as.numeric(1:length(rate))
+
+gom_guesses <- c(z=0.40,a=0.2, b=7.5, c=0.2)
+lapply(gom_guesses,as.numeric)
+
+
+nls_model <- nls ( rate ~ z + a*exp(-b*exp(-c*time)),trace=TRUE,start=gom_guesses)
+nls_model
+## Nonlinear regression model
+##   model: rate ~ z + a * exp(-b * exp(-c * time))
+##    data: parent.frame()
+##      z      a      b      c 
+## 0.3893 0.2003 4.4750 0.1797 
+##  residual sum-of-squares: 0.005046
+## 
+## Number of iterations to convergence: 6 
+## Achieved convergence tolerance: 1.855e-06
+
+
+
+plot(rate <- as.matrix(lines1) %*% splines_fit_nloc$par.ests[2:(df+1)]
+     + splines_fit_nloc$par.ests[1], ylim = c(0.86,0.93))
+curve(gompertz(x, theta=coef(nls_model)), col="red", add=TRUE)
+
+splines_fit_nloc$par.ests[(df+2):(df+3)]
+## Scale (Intercept) Shape (Intercept) 
+##         0.0630243        -0.4069295
+
+
+init <- c(coef(nls_model),splines_fit_nloc$par.ests[df+2],splines_fit_nloc$par.ests[df+3])
+
+
+top1 <- cbind(g_dat[1:68,2])
+mle <- optim(init,gevrloglik, data=top1, control=list(fnscale=-1, trace=TRUE, maxit=999))
+mle$par
+##                 z                 a                 b                 c Scale (Intercept) 
+##        0.43941019        0.16472246        4.13647878        0.11767102        0.02670434 
+## Shape (Intercept) 
+##        0.15230485
+
+
+ts.plot(g_dat[1:68,2], ylab="2 Pt FG Percentage",xlab="Season")
+title("NBA 2pt (Gompertz)")
+curve(gompertz(x, theta=mle$par), col="purple", add=TRUE)
+
+
+gom_limit_2pt <- mle$par[1]+mle$par[2] - mle$par[5]/mle$par[6]; gom_limit_2pt
+## 0.4287978
+
+library(dplyr)
+
+set.seed(12345)
+#gom_values_2pt2 <- sim_param(r=1,boots=3000,data=g_dat[1:68,2],obs_par=mle$par); gom_values_2pt2
+#gom_values_2pt2 = as.data.frame(gom_values_2pt2)
+#gom_values_2pt2 <- gom_values_2pt2[!gom_values_2pt$V9==1,]
+#gom_values_2pt2 <- head(gom_values_2pt,n=1000)
+#write.csv(gom_values_2pt,"gom_values_2pt.csv")
+gom_values_2pt <- read.csv("gom_values_2pt.csv")
+gom_values_2pt <- gom_values_2pt[,-1]
+gom_values_2pt <- mutate(gom_values_2pt, limit = V1 + V2 - V5/V6)
+
+gom_limits_2pt <- gom_values_2pt$limit
+gom_limits_2pt <- gom_limits_2pt[sort.list(gom_limits_2pt)]
+
+gom_lb_2pt <- gom_limits_2pt[25]; gom_lb_2pt
+## 9.856908e-08
+## aka 0.001
+
+gom_ub_2pt <- gom_limits_2pt[975]; gom_ub_2pt
+## 0.5440161
+
+
+
+
+
+mle$value # gompertz loglikelihood fitting
+## 131.9416
+
+test0 = mle$value
+
+length(gom_values_2pt$V7[gom_values_2pt$V7 >= test0])/nrow(gom_values_2pt) # approx. pvalue
+## 0.727
+
+hist(values$V7,main="Histogram of Simulated Loglikelihoods",xlab="Loglikelihoods")
+abline(v = mle$value, lty = 2,col="purple")
+
+time = 1:68
+mu <- gompertz(time, mle$par[1:4])
+non_loc_data = g_dat[1:68,2] - mu
+
+ks = ks.test(non_loc_data,pgev,scale=mle$par[5],shape=mle$par[6]); ks
+ks$statistic
+## 0.06620873
+
+length(gom_values_2pt$V8[gom_values_2pt$V8 >= ks$statistic])/nrow(gom_values_2pt) # approx. pvalue
+## 0.961
+
+hist(gom_values_2pt$V8,main="NBA 2pt (Gompertz): Histogram of KS Statistics",xlab="KS Statistics")
+abline(v = ks$statistic, lty = 2,col="purple")
+
+```
+
+
+
+```{r top3gom2pt}
+########################
+####top3 Gompertz2pt####
+########################
+
+setwd("C:/Users/Tom Kennon/Documents/UCONN/STATS UG Thesis Research/R Code/Undergraduate-Thesis-Research")
+
+bdat <- read.csv("2pt10.csv",header=TRUE, sep=",")
+#free throw percentages
+
+bdat <- bdat[bdat$Lg=="NBA",]
+
+g_dat <- bdat[c(1,4,6,8,10,12,14,16,18,20,22)]
+library(dplyr)
+g_dat <- g_dat %>% arrange(-row_number())
+
+
+
+library(splines2)
+library(eva)
+library(Matrix)
+
+df <- 6
+
+lines1 <- iSpline(1:68, df) #all positive values
+lines1 <- as.data.frame(lines1)
+names(lines1) <- paste0("x",1:df)
+
+source("functions.R")
+
+splines_fit_nloc <- gevr_fit_nloc(g_dat[1:68,2:4], locvars = lines1,
+                                  locform = ~ x1 + x2 + x3 + x4 + x5 + x6)
+#splines_fit_nloc$par.ests #all location values are pos.
+## Location (Intercept)          Location x1          Location x2          Location x3 
+##         4.447928e-01         1.555022e-01         3.004173e-03         1.400975e-02 
+##          Location x4          Location x5          Location x6    Scale (Intercept) 
+##         1.772304e-02         9.105113e-10         4.146027e-02         4.364791e-02 
+##    Shape (Intercept) 
+##        -3.006985e-01
+
+
+plot(rate <- as.matrix(lines1) %*% splines_fit_nloc$par.ests[2:(df+1)]
+     + splines_fit_nloc$par.ests[1])
+
+
+# My guess at parameter values
+curve(0.44 + .16* exp(-4 * exp(-.07*x)),0, 73, add=TRUE, col="red")
+
+time <- as.numeric(1:length(rate))
+
+gom_guesses <- c(z=0.44,a=0.16, b=4, c=0.15)
+lapply(gom_guesses,as.numeric)
+
+
+nls_model <- nls ( rate ~ z + a*exp(-b*exp(-c*time)),trace=TRUE,start=gom_guesses)
+nls_model
+## Didn't work so I used the mle from top1 instead
+
+plot(rate <- as.matrix(lines1) %*% splines_fit_nloc$par.ests[2:(df+1)]
+     + splines_fit_nloc$par.ests[1], ylim = c(0.86,0.93))
+curve(gompertz(x, theta=coef(nls_model)), col="red", add=TRUE)
+
+splines_fit_nloc$par.ests[(df+2):(df+3)]
+## Scale (Intercept) Shape (Intercept) 
+##        0.04364791       -0.30069849
+
+
+init <- c(0.43941019,0.16472246,4.13647878,0.11767102,0.02670434,0.15230485)
+
+
+top3 <- cbind(g_dat[1:68,2:4])
+mle <- optim(init,gevrloglik, data=top3, control=list(fnscale=-1, trace=TRUE, maxit=999))
+mle$par
+##                 z                 a                 b                 c Scale (Intercept) 
+##        0.45154969        0.15377180        3.99886499        0.12781146        0.03390294 
+## Shape (Intercept) 
+##        0.05600819
+
+
+ts.plot(g_dat[1:68,2:4], ylab="2Pt FG Percentage",xlab="Season")
+title("NBA 2pt Top3 (Gompertz)")
+curve(gompertz(x, theta=mle$par), col="purple", add=TRUE)
+
+
+gom_limit_2pt_top3 <- mle$par[1]+mle$par[2] - mle$par[5]/mle$par[6]; gom_limit_2pt_top3
+## 3.783817e-07
+
+library(dplyr)
+
+set.seed(12345)
+#gom_values_2pt_top3 <- sim_param(r=1,boots=2500,data=g_dat[1:68,2],obs_par=mle$par); gom_values_2pt_top3
+#gom_values_2pt_top3 = as.data.frame(gom_values_2pt_top3)
+#gom_values_2pt_top3 <- gom_values_2pt_top3[!gom_values_2pt_top3$V9==1,]
+#gom_values_2pt_top3 <- gom_values_2pt_top3[gom_values_2pt_top3$V6 < 0,]
+#gom_values_2pt_top3 <- head(gom_values_2pt_top3,n=1000)
+#write.csv(gom_values_2pt_top3,"gom_values_2pt_top3.csv")
+gom_values_2pt_top3 <- read.csv("gom_values_2pt_top3.csv")
+gom_values_2pt_top3 <- gom_values_2pt_top3[,-1]
+gom_values_2pt_top3 <- mutate(gom_values_2pt_top3, limit = V1 + V2 - V5/V6)
+
+gom_limits_2pt_top3 <- gom_values_2pt_top3$limit
+gom_limits_2pt_top3 <- gom_limits_2pt_top3[sort.list(gom_limits_2pt_top3)]
+
+gom_lb_2pt_top3 <- gom_limits_2pt_top3[25]; gom_lb_2pt_top3
+## 0.9687259
+
+gom_ub_2pt_top3 <- gom_limits_2pt_top3[975]; gom_ub_2pt_top3
+## 1
+
+
+
+
+
+mle$value # gompertz loglikelihood fitting
+## 163.8742
+
+test0 = mle$value
+
+length(gom_values_2pt_top3$V7[gom_values_2pt_top3$V7 >= test0])/nrow(gom_values_2pt_top3) # approx. pvalue
+## 0.415
+
+hist(values$V7,main="Histogram of Simulated Loglikelihoods",xlab="Loglikelihoods")
+abline(v = mle$value, lty = 2,col="purple")
+
+time = 1:68
+mu <- gompertz(time, mle$par[1:4])
+non_loc_data = g_dat[1:68,2:4] - mu
+
+ks = ks.test(non_loc_data,pgev,scale=mle$par[5],shape=mle$par[6]); ks
+ks$statistic
+## 0.139061
+
+length(gom_values_2pt_top3$V8[gom_values_2pt_top3$V8 >= ks$statistic])/nrow(gom_values_2pt_top3) # approx. pvalue
+## 0.415
+
+hist(gom_values_2pt_top3$V8,main="NBA 2pt FG Top3 (Gompertz): Histogram of KS Statistics",xlab="KS Statistics")
+abline(v = ks$statistic, lty = 2,col="purple")
+
+```
+
+
