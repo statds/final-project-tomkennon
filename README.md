@@ -1,42 +1,16 @@
-Data Science Lab Project Templates
-==============================
-
-The repository provides R Markdown templates for data science lab projects.
+# Finding an Ultimate Limit for an NBA Player's Shooting Percentage
+This is a repository for my Undergraduate Honors Thesis at UConn.  This analysis was also used for a graduate course I took at UConn called STAT 6494: Data Science in Action.  The repository includes a project proposal, interim project presentation, final project report and corresponding final project report presentation.
 
 
-## Getting Started
+## Brief Description of Project
 
-We may download and unpack the [ZIP][zip] file of the repository, then compile
-the source document within [RStudio][rstudio] (by clicking the button *knit* or
-hitting the shortcut *Ctrl+Shift+K*).
-
-Alternatively (and probably more efficiently), we may clone the repository and
-let the Makefile help reproduce the output as follows:
-
-```bash
-git clone https://github.com/statds/dslab-templates.git
-cd dslab-templates
-make       # for output in pdf and html
-```
-
-The available targets in the Makefile include
-
-- `all`, default target for output in PDF and HTML.
-- `pdf` for PDF output only
-- `html`  for HTML output only
-- `clean` for cleaning some temporary files such as `*.log` and `*.aux`.
-- `rmCache` for cleaning cache files, which can be crucial if we modified
-    code chunk for a new evaluation.
+Extreme value theory is used to estimate the ultimate upper or lower limit for an NBA season's league leading player's shooting percentage (free throw, 2 point field goal, and 3 point field goal).  The limits are found using the generalized extreme value distribution with parameters optimized using the Nelder-Mead method maximizing the loglikelihood.  Two different techniques are applied in this project to finding an optimal generalized extreme value distribution location parameter $\mu$ including a constant and a Gompertz curve.  A 95% bootstrap confidence interval is calculated for these limits.  Kolmogorov-Smirnov tests and a Score test are run as well through the bootstrapped datasets to evaluate goodness of fits.
 
 
-## Output Preview
+## Files
+The main files in this repository are as follows:
+- Final Report Source: [RMD](https://github.com/statds/final-project-tomkennon/blob/master/Final%20Project%20Report/Final%20Paper/template.Rmd)
+- Final Report Paper: [PDF](https://github.com/statds/final-project-tomkennon/blob/master/Final%20Project%20Report/Final%20Paper/template.pdf)
 
-The output of the templates in PDF and HTML are available for preview.
-
-- [PDF](https://statds.github.io/dslab-templates/template.pdf)
-- [HTML](https://statds.github.io/dslab-templates/)
-
-
-
-[zip]: https://github.com/statds/dslab-templates/archive/master.zip
-[rstudio]: https://www.rstudio.com/
+## File Types
+This {.PDF} paper is generated from an R markdown {.Rmd} file.  The datasets {.csv} and image files {.png} used are included in the repository to allow for reproducible code.
