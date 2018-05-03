@@ -1,0 +1,1065 @@
+---
+title: "Predicting limit for NBA Percentage Statistics"
+author: "Tom Kennon"
+date: "`r format(Sys.time(), '%d %B %Y')`"
+output:
+  ioslides_presentation:
+    smaller: yes
+    widecreen: yes
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+```
+
+```{r setup2, echo = FALSE, message = FALSE, warning = FALSE}
+
+## get output format in case something needs extra effort
+outFormat <- knitr::opts_knit$get("rmarkdown.pandoc.to")
+## "latex" or "html"
+
+## for latex output
+isLatex <- identical(outFormat, "latex")
+latex <- ifelse(isLatex, '\\LaTeX\\', 'LaTeX')
+```
+
+## Estimating NBA Shooting Perentages
+- Typically in the National Basketball Association (NBA), the league leader in free throw percentage for a season is approximately 91-93%.
+- The highest mark to lead the league was Jose Calderon's 98.1% in 2008-2009.
+- The lowest mark to lead the league was M. Zaslofsky 's 84.3% in 1949-1950.
+- Typically in the National Basketball Association (NBA), the league leader in 2pt field goal percentage for a season is approximately 65-70%.
+- The highest mark to lead the league was Wilt Chamberlain's 72.7% in 1972-1973.
+- The lowest mark to lead the league was N. Johnston's 44.7% in 1956-1957.
+- Typically in the National Basketball Association (NBA), the league leader in free throw percentage for a season is approximately 45-50%.
+- The highest mark to lead the league was Kyle Korver's 53.6% in 2009-2010.
+- The lowest mark to lead the league was Bruce Bowen's 44.1% in 2002-2003.
+
+
+## Estimating NBA Shooting Perentages
+- We use extreme value theory to estimate the ultimate upper or lower limit for an individual player's free throw percentage for an NBA season.
+- The limit is found using the generalized extreme value (GEV) distribution with parameters optimized using the Nelder Mead method minimizing the loglikihood.
+- Two different techniques are applied in this project to finding an optimal GEV location parameter $\mu$ including a constant and a gompertz curve.
+- A 95% bootstrap confidence interval is calculated for this limit.
+- The GEV distribution does not restrict the limit to be 100% which is the practical absolute limit in real life so restrictions are applied in the maximum loglikelihood estimation (MLE).
+- A Kolmogorov-Smirnov test is run as well through the bootstrapped datasets to evaluate goodness of fit.
+
+## Data
+
+- The datasets are from Basketball Reference (https://www.basketball-reference.com/).
+- This website is a comprehensive source for various statistics in basketball's history, most specifically the NBA.
+- The datasets consist of the top 10 NBA individual players' free throw percentages, top 10 NBA individual players' 2 point field goal percentage, and top 10 NBA individual players' 3 point percentages respectively, for each season recorded since the inception of the league 1949-2017 (68 seasons total).
+
+## Data
+- Top Free Throw Percentage for Each Season
+```{r top1, echo=FALSE,message=FALSE,fig.cap = "Top Free Throw Percentage in the NBA from 1947-2014", fig.width = 7}
+bdat <- read.csv("C:/Users/Tom Kennon/Documents/UCONN/STATS Research Jun Yan/ft10.csv",header=TRUE, sep=",")
+#free throw percentages
+
+bdat <- bdat[bdat$Lg=="NBA",]
+
+g_dat <- bdat[c(1,4,6,8,10,12,14,16,18,20,22)]
+library(dplyr)
+g_dat <- g_dat %>% arrange(-row_number())
+
+tplot_data <- g_dat[1:2]
+tplot_data <- tplot_data %>%
+  mutate(Season = as.numeric(substr(Season,start=1,stop=4)) + 1)
+
+
+library(ggplot2)
+ggplot(tplot_data, aes(Season,perc1)) + geom_line() +
+  scale_x_continuous() + xlab("Season") + ylab("Top Free Throw Percentage") +
+  geom_point(aes(x=2009,y=0.9805),colour="darkred",size=3.5)
+```
+
+
+## Generalized Extreme Value Distribution (GEV)
+
+Let $x_{r,i}$ denote for $i$'s season, the $r$th best free throw percentage.  Let $x_{1,i} \geq x_{2,i} \geq x_{3,i} ... \geq x_{10,i}$ for $i=1, 2, 3, ... 68$ (68 total seasons). The generalized extreme value (GEV) distribution's probability density function is defined as:
+
+$$
+\begin{align}
+    f(x| \mu, \sigma, \xi) =  \frac{1}{\sigma} \left(1+\xi \frac{x-\mu}{\sigma} \right)^{-\frac{1}{\xi}-1}e^{-\left(1+\xi \frac{x-\mu}{\sigma} \right)^{-\frac{1}{\xi}}}
+\end{align}
+$$
+
+with support:
+
+$$
+\begin{align}
+    X \in [\mu - \frac{\sigma}{\xi}] & \text{ when } & \xi > 0 \\
+    X \in (-\infty,\infty) & \text{ when } & \xi = 0 \\
+    X \in [\mu + \frac{\sigma}{\xi}] & \text{ when } & \xi < 0
+\end{align}
+$$
+
+## Generalized Extreme Value r Distribution (GEVr)
+
+Let $x_{r,i}$ denote for $i$'s season, the $r$th best free throw percentage.  Let $x_{1,i} \geq x_{2,i} \geq x_{3,i} ... \geq x_{10,i}$ for $i=1, 2, 3, ... 68$ (68 total seasons). The generalized extreme value (GEV) distribution's probability density function (Bader 2016) is defined as where $x_1 > \cdots> x_r$, $z_j = (x_j - \mu) / \sigma$, and $1 + \xi z_j > 0$ for $j=1, \ldots, r$.
+
+$$
+f_r (x_1, x_2, ..., x_r | \mu, \sigma, \xi) = \sigma^{-r}\exp\left\{-(1+\xi z_r)^{-\frac{1}{\xi}} - \left(\frac{1}{\xi}+1\right)\sum_{j=1}^{r}\log(1+\xi z_j)\right\}
+$$
+where $x_1 > \cdots> x_r$, $z_j = (x_j - \mu) / \sigma$, and $1 + \xi z_j > 0$ for $j=1, \ldots, r$.  
+
+With support:
+
+$$
+\begin{align}
+    X \in [\mu - \frac{\sigma}{\xi}] & \text{ when } & \xi > 0 \\
+    X \in (-\infty,\infty) & \text{ when } & \xi = 0 \\
+    X \in [\mu + \frac{\sigma}{\xi}] & \text{ when } & \xi < 0
+\end{align}
+$$
+
+## Generalized Extreme Value Distribution
+- a special case of the GEVr distribution where r=1
+- The GEV distribution takes three parameters: location $\mu \in \mathbb{R}$, scale $\sigma > 0$, and shape $\xi \in \mathbb{R}$.
+- Based off of the support,
+    + a lower limit $x^{*} = \mu - \frac{\sigma}{\xi}$ can be found if the shape parameter $\xi > 0$
+    + an upper limit $x^{*} = \mu + \frac{\sigma}{\xi}$ can be found if the shape parameter $\xi < 0$
+- This upper limit is what is of interest for the free throw data
+- This lower limit is what is of interest for the 2pt and 3pt data
+- We implemented and evaluated the fit of various location parameters including an evaluated gompertz curve and a constant value.
+
+## Constant for Location Parameter
+- A constant $k$ for the location parameter $\mu$ is the simplest usage.
+$$
+\begin{align}
+    f(x) =  \frac{1}{\sigma} \left(1+\xi \frac{x-k}{\sigma} \right)^{-\frac{1}{\xi}-1}e^{-\left(1+\xi \frac{x-k}{\sigma} \right)^{-\frac{1}{\xi}}}
+\end{align}
+$$
+- the upper limit $x^{*} = k + \frac{\sigma}{\xi}$ can be found if the shape parameter $\xi < 0$
+- the lower limit $x^{*} = k - \frac{\sigma}{\xi}$ can be found if the shape parameter $\xi > 0$
+
+
+## Gompertz Curve for Location Parameter
+The gompertz approach uses the gompertz function defined as:
+
+$$
+\begin{align}
+    f(t)= ae^{-be^{(-ct)}} + z
+\end{align}
+$$
+
+- The gompertz curve is a function of time $t$
+- $a$ is the asymptotic parameter (technically $a+z$ is the asymptote)
+- $b$ describes where the curve is placed on the x axis
+- $c$ is the growth rate
+- $z$ is the intercept.
+- $\lim_{t \to \infty} f(t) = \lim_{t \to \infty} ae^{-be^{(-ct)}} + z = ae^{-be^{(-\infty)}} + z = ae^{0} + z = a + z$
+- Due to the asymptotic feature of the gompertz curve, I can fit a gompertz curve $f(t)$ as the location parameter $\mu$ of the gev distribution thus the findings do not depend on time.
+    + This is unlike many time series approaches like ARIMA modeling, that use time to forecast results in the future allowing an ultimate upper limit that does not have to happen at a certain time.
+
+## Gompertz Curve for Location Parameter
+
+The gompertz curve implemented into the gev distribution's location parameter:
+
+$$
+\begin{align}
+    f(x) =  \frac{1}{\sigma} \left(1+\xi \frac{x-(ae^{-be^{(-ct)}} + z)}{\sigma} \right)^{-\frac{1}{\xi}-1}e^{-\left(1+\xi \frac{x-(ae^{-be^{(-ct)}} + z)}{\sigma} \right)^{-\frac{1}{\xi}}}
+\end{align}
+$$
+
+
+
+
+## Functions
+```{r functions, echo=TRUE,eval=FALSE}
+
+#Gompertz function evaluates parameters using gompertz distribution
+gompertz <- function(time, theta){
+  theta[1] + theta[2]*exp(-theta[3]*exp(-theta[4]*time))
+}
+
+### Log likelihood function for gevr distribution using gompertz curve as location parameter
+gevrloglik <- function(theta, data){
+  time <- 1:NROW(data)
+  mu <- gompertz(time, theta[1:4])
+  if (theta[5] < 0) return(-Inf)
+  log.density <- sum(dgevr(data, loc = mu, scale = theta[5], shape = theta[6], log.d=TRUE))
+  return(log.density)
+}
+```
+
+## Functions
+```{r functions2, echo=TRUE,message=FALSE, eval=FALSE}
+sim_param_constant <- function(r, boots, data, obs_par) {
+  stats <- matrix(nrow=boots, ncol=(length(obs_par)+2))
+  for(i in 1:boots){
+    sim_data <- rep(NA, boots)
+    sim_data <- rgevr(n=length(data), r = r, loc=obs_par[1],
+                      scale=obs_par[2], shape=obs_par[3])
+    mle_obj <- gevrFit(sim_data, method = "mle")
+    mle_par <- mle_obj$par.ests
+    mle_val <- mle_obj$nllh.final
+    mu <- mle_par[1]
+    non_loc_data = data - mu
+    ks = ks.test(non_loc_data,pgev,scale=mle_par[2],shape=mle_par[3])
+    stats[i,] <- c(mle_par,mle_val,ks$statistic)
+  }
+  return(stats)
+}
+```
+
+
+## Functions
+```{r functions3, echo=TRUE,message=FALSE, eval=FALSE}
+sim_param_gom <- function(r, boots, data, obs_par) {
+  stats <- matrix(nrow=boots, ncol=(length(obs_par)+2))
+  for(i in 1:boots){
+    sim_data <- rep(NA, boots)
+    sim_data <- rgevr(n=length(data), r = r, loc=gompertz(1:length(data),obs_par[1:4]),
+                      scale=obs_par[5], shape=obs_par[6])
+    mle_obj <- matrix(nrow=length(data),ncol=r)
+    mle_obj <- optim(obs_par,gevrloglik, data=sim_data,
+                     control=list(fnscale=-1, trace=FALSE, maxit=999))
+    mle_par <- mle_obj$par
+    mle_val <- mle_obj$value
+    time = 1:length(data)
+    mu <- gompertz(time, mle_par[1:4])
+    non_loc_data = data - mu
+    ks = ks.test(non_loc_data,pgev,scale=mle_par[5],shape=mle_par[6])
+    stats[i,] <- c(mle_par,mle_val,ks$statistic)
+  }
+  return(stats)
+}
+```
+
+## Optimizing Parameters: Constant Top1
+- Parameters for the GEV distribution are fitted to the data using maximum loglikelihood estimation (MLE) criteria and the {eva} package's "gevrFit" function.
+- An ultimate upper limit is then calculated using the MLE parameters.
+```{r optim_constant, echo=TRUE,message=FALSE, eval=FALSE}
+library(eva)
+source("functions.R")
+
+mle <- gevrFit(top1[27:68,], method = "mle") #only stationary part of the data
+mle
+
+limit <- mle$par.ests[1] - mle$par.ests[2]/mle$par.ests[3]; limit
+```
+
+```{r constant, message=FALSE, include=FALSE}
+###################
+####ft Constant####
+###################
+
+setwd("C:/Users/Tom Kennon/Documents/UCONN/STATS UG Thesis Research/R Code/Undergraduate-Thesis-Research")
+
+bdat <- read.csv("ft10.csv",header=TRUE, sep=",")
+#free throw percentages
+
+bdat <- bdat[bdat$Lg=="NBA",]
+
+g_dat <- bdat[c(1,4,6,8,10,12,14,16,18,20,22)]
+library(dplyr)
+g_dat <- g_dat %>% arrange(-row_number())
+
+#g_dat[2] <- (g_dat[2])^(2)
+
+library(splines2)
+library(eva)
+library(Matrix)
+
+source("functions.R")
+
+
+mle2 <- gevrFit(g_dat[27:68,2], method = "mle") #only stationary part of the data
+mle2
+
+
+top1 <- cbind(g_dat[27:68,2])
+avg <- mean(g_dat[27:68,2])
+mle <- optim(c(avg,0.01,-0.1377),
+             gevrloglik_const, data=top1, control=list(fnscale=-1, trace=TRUE, maxit=999))
+mle$par
+##                 mu       Scale (Intercept)     Shape (Intercept)
+##        0.91471260              0.01836103           -0.23636212
+
+
+
+ts.plot(g_dat[27:68,2], ylab="Free Throw Percentage",xlab="Season")
+title("NBA FT (Constant)")
+abline(h=mle$par[1], col="purple")
+
+
+limit <- mle$par[1] - mle$par[2]/mle$par[3]; limit
+## 0.9923944 
+
+library(dplyr)
+
+set.seed(12345)
+#con_values_ft <- sim_param_constant2(r=1,boots=1250,data=g_dat[27:68,2],obs_par=mle$par); con_values_ft
+#con_values_ft = as.data.frame(con_values_ft)
+#con_values_ft <- con_values_ft[!con_values_ft$V6==1,]
+#con_values_ft <- head(con_values_ft,n=1000)
+#write.csv(con_values_ft,"con_values_ft.csv")
+con_values_ft <- read.csv("con_values_ft.csv")
+con_values_ft <- con_values_ft[,-1]
+con_values_ft <- mutate(con_values_ft, limit = V1 - V2/V3)
+
+con_limits_ft <- con_values_ft$limit
+con_limits_ft <- con_limits_ft[sort.list(con_limits_ft)]
+
+con_lb_ft <- con_limits_ft[25]; con_lb_ft
+## 0.9515981
+
+con_ub_ft <- con_limits_ft[975]; con_ub_ft
+## 1
+
+#limit <- (mle$par.ests[1] - mle$par.ests[2]/mle$par.ests[3])^(1/2); limit
+
+
+
+
+mle$value # constant loglikelihood fitting
+## 106.0102
+
+test0 = mle$value
+
+
+mu <- mle$par[1]
+non_loc_data = g_dat[27:68,2] - mu
+
+ks = ks.test(non_loc_data,pgev,scale=mle$par[2],shape=mle$par[3]); ks
+ks$statistic
+## 0.1260032
+
+length(con_values_ft$V5[con_values_ft$V5 >= ks$statistic])/nrow(con_values_ft) # approx. pvalue
+## 0.919
+
+hist(con_values_ft$V5,main="NBA FT (Constant): Histogram of KS Statistics",xlab="KS Statistics")
+abline(v = ks$statistic, lty = 2,col="purple")
+
+top1 <- cbind(g_dat[27:68,2])
+avg <- mean(g_dat[27:68,2])
+mle <- optim(c(avg,0.01,-0.1377),
+             gevrloglik_const, data=top1, control=list(fnscale=-1, trace=TRUE, maxit=999))
+mle$par
+##                 mu       Scale (Intercept)     Shape (Intercept)
+##        0.91471260              0.01836103           -0.23636212
+
+
+
+ts.plot(g_dat[27:68,2], ylab="Free Throw Percentage",xlab="Season")
+title("NBA FT (Constant)")
+abline(h=mle$par[1], col="purple")
+
+
+limit <- mle$par[1] - mle$par[2]/mle$par[3]; limit
+## 0.9923944 
+
+```
+
+
+
+## Gompertz Top1 MLE fitting to the Data
+
+```{r,echo=TRUE}
+ts.plot(g_dat[27:68,2], ylab="Free Throw Percentage",xlab="Season")
+title("NBA FT (Constant)")
+abline(h=mle$par[1], col="purple")
+
+```
+
+
+
+
+## Kolmogorov-Smirnov Test
+- To evaluate goodness of fit for the gev distribution, I will use the Kolmogorov-Smirnov test.
+- I cannot use the pvalue from the output of this test however because it relies on the mean from the data so instead a parametric bootstrap approach is applied with a resulting approximated pvalue.
+- If the approximated pvalue is < 0.05, then it means that the distribution is not a good fit to the data
+- My approach for the constant Kolmogorov_Smirnov Test is below:
+
+## Kolmogorov-Smirnov Test
+
+```{r constant3, echo=TRUE,message=FALSE,warning=FALSE}
+mu <- mle$par[1]
+non_loc_data = g_dat[27:68,2] - mu
+
+ks = ks.test(non_loc_data,pgev,scale=mle$par[2],shape=mle$par[3]); ks
+ks$statistic
+```
+
+
+## Bootstrap Confidence Interval: Constant Top1
+- A 95% boostrap confidence interval is calculated by running 1000 bootstraps using this same method on 1000 unique datasets randomly generated using the MLE parameters for the GEV distribution found.
+```{r boot_constant, echo=TRUE,message=FALSE, eval=FALSE}
+library(dplyr)
+
+set.seed(12345)
+values <- sim_param_constant(r=1,boots=1000,data=top1[27:68,],obs_par=mle$par.ests); values
+values = as.data.frame(values)
+values <- mutate(values, limit = V1 - V2/V3)
+
+
+limits <- values$limit
+limits <- limits[sort.list(limits)]
+
+lb <- limits[25]; lb
+
+ub <- limits[975]; ub
+```
+
+## Bootstrap Confidence Interval: Constant Top1
+
+```{r boot_constant2, echo=TRUE,message=FALSE}
+head(con_values_ft)
+```
+
+```{r constantgof, echo=TRUE,message=FALSE,eval=FALSE}
+length(con_values_ft$V5[con_values_ft$V5 >= ks$statistic])/nrow(con_values_ft) # approx. pvalue
+## 0.919
+
+hist(con_values_ft$V5,main="NBA FT (Constant): Histogram of KS Statistics",xlab="KS Statistics")
+abline(v = ks$statistic, lty = 2,col="purple")
+```
+
+## Constant Top1 Goodness of Fit
+- approx. pvalue = 0.919
+
+
+```{r fig.width=10, fig.height=4,echo=FALSE}
+library(png)
+library(grid)
+img <- readPNG("NBA FT (Constant) Histogram of KS Statistics.png")
+grid.raster(img)
+```
+
+
+
+
+## Results
+```{r,echo=FALSE}
+Data <- c(rep("FT",4),"3pt","2pt")
+r <- c(1,1,3,3,1,1)
+Method <- c("Constant","Gompertz", "Constant", "Gompertz","Constant","Gompertz")
+Upper.Or.Lower <- c(rep("Upper",4),rep("Lower",2))
+Current.Record <- c(rep(0.981,4),0.441,0.447)
+Limit <- c(0.992,0.996,0.997,0.995,0.325,0.429)
+CI.95.Perc <- c("(0.952,1)","(0.969,1)","(0.960,1)","(0.975,1)","(0.045,0.427)","(0.001,0.544)")
+
+dtable <- data.frame(Data,r,Method,Upper.Or.Lower,Current.Record,Limit,CI.95.Perc)
+
+library(knitr)
+
+knitr::kable(dtable[1,], booktabs = TRUE)
+```
+
+
+## Initial Parameters to Run Through Optimizer
+```{r, echo=TRUE,message=FALSE, eval=TRUE}
+library(splines2)
+library(eva)
+library(Matrix)
+
+df <- 6
+
+lines1 <- iSpline(1:68, df) #all positive values
+lines1 <- as.data.frame(lines1)
+names(lines1) <- paste0("x",1:df)
+
+source("functions.R")
+
+splines_fit_nloc <- gevr_fit_nloc(g_dat[1:68,2], locvars = lines1,
+                                  locform = ~ x1 + x2 + x3 + x4 + x5 + x6)
+
+splines_fit_nloc$par.ests #all location values are pos.
+```
+
+## Initial Parameters to Run Through Optimizer
+
+```{r, echo=TRUE,message=FALSE, eval=TRUE}
+plot(rate <- as.matrix(lines1) %*% splines_fit_nloc$par.ests[2:(df+1)]
+     + splines_fit_nloc$par.ests[1])
+
+# My guess at parameter values
+curve(0.86 + .06* exp(-7.5 * exp(-.1*x)),0, 73, add=TRUE, col="red")
+
+time <- as.numeric(1:length(rate))
+gom_guesses <- c(z=0.86,a=0.06, b=7.5, c=0.1)
+
+```
+
+## Initial Parameters to Run Through Optimizer
+
+```{r, echo=TRUE,message=FALSE, eval=TRUE}
+nls_model <- nls ( rate ~ z + a*exp(-b*exp(-c*time)),trace=TRUE,start=gom_guesses)
+nls_model
+
+init <- c(coef(nls_model),splines_fit_nloc$par.ests[df+2],splines_fit_nloc$par.ests[df+3])
+
+```
+
+## Optimizing Parameters: Gompertz Top1
+- Parameters for the GEV distribution are fitted to the data through the optimization method Nelder Mead using maximum loglikelihood estimation (MLE) criteria.
+- An ultimate upper limit is then calculated using the MLE parameters.
+```{r optim_gom, echo=TRUE,message=FALSE, eval=FALSE}
+source("functions.R")
+
+init <- c(coef(nls_model),splines_fit_nloc$par.ests[df+2],splines_fit_nloc$par.ests[df+3])
+
+mle <- optim(init,gevrloglik, data=top1, control=list(fnscale=-1, trace=TRUE, maxit=999))
+mle$par
+
+gom_limit <- mle$par[1]+mle$par[2] - mle$par[5]/mle$par[6]; gom_limit
+```
+
+```{r gom,echo=FALSE,message=FALSE,include=FALSE}
+##################
+####Gompertzft####
+##################
+
+setwd("C:/Users/Tom Kennon/Documents/UCONN/STATS UG Thesis Research/R Code/Undergraduate-Thesis-Research")
+
+bdat <- read.csv("ft10.csv",header=TRUE, sep=",")
+#free throw percentages
+
+bdat <- bdat[bdat$Lg=="NBA",]
+
+g_dat <- bdat[c(1,4,6,8,10,12,14,16,18,20,22)]
+library(dplyr)
+g_dat <- g_dat %>% arrange(-row_number())
+
+
+
+library(splines2)
+library(eva)
+library(Matrix)
+
+df <- 6
+
+lines1 <- iSpline(1:68, df) #all positive values
+lines1 <- as.data.frame(lines1)
+names(lines1) <- paste0("x",1:df)
+
+source("functions.R")
+
+splines_fit_nloc <- gevr_fit_nloc(g_dat[1:68,2], locvars = lines1,
+                                  locform = ~ x1 + x2 + x3 + x4 + x5 + x6)
+#splines_fit_nloc$par.ests #all location values are pos.
+## Location (Intercept)          Location x1          Location x2          Location x3 
+##         0.8708062325         0.0126327948         0.0206960408         0.0169531688 
+##          Location x4          Location x5          Location x6    Scale (Intercept) 
+##         0.0021670871         0.0028668688         0.0001270271         0.0238878742 
+##    Shape (Intercept) 
+##        -0.3948611535
+
+
+plot(rate <- as.matrix(lines1) %*% splines_fit_nloc$par.ests[2:(df+1)]
+     + splines_fit_nloc$par.ests[1])
+
+
+# My guess at parameter values
+curve(0.86 + .06* exp(-7.5 * exp(-.1*x)),0, 73, add=TRUE, col="red")
+
+time <- as.numeric(1:length(rate))
+
+gom_guesses <- c(z=0.86,a=0.06, b=7.5, c=0.1)
+lapply(gom_guesses,as.numeric)
+
+
+nls_model <- nls ( rate ~ z + a*exp(-b*exp(-c*time)),trace=TRUE,start=gom_guesses)
+nls_model
+## Nonlinear regression model
+##   model: rate ~ z + a * exp(-b * exp(-c * time))
+##    data: parent.frame()
+##       z       a       b       c 
+## 0.86731 0.06079 3.33199 0.06822 
+##  residual sum-of-squares: 2.031e-06
+## 
+## Number of iterations to convergence: 6 
+## Achieved convergence tolerance: 4.435e-07
+
+
+
+plot(rate <- as.matrix(lines1) %*% splines_fit_nloc$par.ests[2:(df+1)]
+     + splines_fit_nloc$par.ests[1], ylim = c(0.86,0.93))
+curve(gompertz(x, theta=coef(nls_model)), col="red", add=TRUE)
+
+splines_fit_nloc$par.ests[(df+2):(df+3)]
+## Scale (Intercept) Shape (Intercept) 
+##        0.02388787       -0.39486115
+
+
+init <- c(coef(nls_model),splines_fit_nloc$par.ests[df+2],splines_fit_nloc$par.ests[df+3])
+
+
+top1 <- cbind(g_dat[1:68,2])
+mle <- optim(init,gevrloglik, data=top1, control=list(fnscale=-1, trace=TRUE, maxit=999))
+mle$par
+##                 z                 a                 b                 c Scale (Intercept) 
+##        0.86337007        0.06019513        7.40361788        0.09962452        0.01868951 
+## Shape (Intercept) 
+##       -0.10631775
+
+
+ts.plot(g_dat[1:68,2], ylab="Free Throw Percentage",xlab="Season")
+title("NBA FT (Gompertz)")
+curve(gompertz(x, theta=mle$par), col="purple", add=TRUE)
+
+
+gom_limit_ft <- mle$par[1]+mle$par[2] - mle$par[5]/mle$par[6]; gom_limit_ft
+## 0.996
+
+library(dplyr)
+
+set.seed(12345)
+#gom_values_ft <- sim_param(r=1,boots=1750,data=g_dat[1:68,2],obs_par=mle$par); gom_values_ft
+#gom_values_ft = as.data.frame(gom_values_ft)
+#gom_values_ft <- gom_values_ft[!gom_values_ft$V9==1,]
+#gom_values_ft <- head(gom_values_ft,n=1000)
+#write.csv(gom_values_ft,"gom_values_ft.csv")
+gom_values_ft <- read.csv("gom_values_ft.csv")
+gom_values_ft <- gom_values_ft[,-1]
+gom_values_ft <- mutate(gom_values_ft, limit = V1 + V2 - V5/V6)
+
+gom_limits_ft <- gom_values_ft$limit
+gom_limits_ft <- gom_limits_ft[sort.list(gom_limits_ft)]
+
+gom_lb_ft <- gom_limits_ft[25]; gom_lb_ft
+## 0.9687259
+
+gom_ub_ft <- gom_limits_ft[975]; gom_ub_ft
+## 1
+
+
+
+
+
+mle$value # gompertz loglikelihood fitting
+## 163.8742
+
+test0 = mle$value
+
+
+time = 1:68
+mu <- gompertz(time, mle$par[1:4])
+non_loc_data = g_dat[1:68,2] - mu
+
+ks = ks.test(non_loc_data,pgev,scale=mle$par[5],shape=mle$par[6]); ks
+ks$statistic
+## 0.139061
+
+length(gom_values_ft$V8[gom_values_ft$V8 >= ks$statistic])/nrow(gom_values_ft) # approx. pvalue
+## 0.415
+
+hist(gom_values_ft$V8,main="NBA FT (Gompertz): Histogram of KS Statistics",xlab="KS Statistics")
+abline(v = ks$statistic, lty = 2,col="purple")
+
+```
+
+
+## Optimizing Parameters: Gompertz Top1
+
+```{r gom2, echo=TRUE,message=FALSE}
+mle$par
+
+gom_limit_ft <- mle$par[1]+mle$par[2] - mle$par[5]/mle$par[6]; gom_limit_ft
+## 0.996
+
+```
+
+## Gompertz Top1 MLE fitting to the Data
+
+```{r fig.width=10, fig.height=4,echo=FALSE}
+library(png)
+library(grid)
+img <- readPNG("NBA FT (Gompertz).png")
+grid.raster(img)
+```
+
+
+
+## Kolmogorov_Smirnov Test
+
+- My approach for the constant Kolmogorov_Smirnov Test is below:
+
+```{r gom3, echo=TRUE,message=FALSE,warning=FALSE}
+time = 1:68
+mu <- gompertz(time, mle$par[1:4])
+non_loc_data = g_dat[1:68,2] - mu
+
+ks = ks.test(non_loc_data,pgev,scale=mle$par[5],shape=mle$par[6]); ks
+ks$statistic
+## 0.139061
+
+```
+
+
+## Gompertz Top1 Goodness of Fit
+- approx. pvalue = 0.415
+
+```{r fig.width=10, fig.height=4,echo=FALSE}
+library(png)
+library(grid)
+img <- readPNG("NBA FT (Constant) Histogram of KS Statistics.png")
+grid.raster(img)
+```
+
+
+
+## Bootstrap Confidence Interval: Gompertz Top1
+- A 95% boostrap confidence interval is calculated by running 1000 bootstraps using this same method on 1000 unique datasets randomly generated using the MLE parameters for the GEV distribution found.
+```{r boot_gom, echo=TRUE,message=FALSE, eval=FALSE}
+library(dplyr)
+
+set.seed(12345)
+values <- sim_param(r=1,boots=1000,data=top1,obs_par=mle$par); values
+values = as.data.frame(values)
+values <- mutate(values, limit = V1 + V2 - V5/V6)
+
+limits <- values$limit
+limits <- limits[sort.list(limits)]
+
+lb <- limits[25]; lb
+
+ub <- limits[975]; ub
+
+```
+
+## Bootstrap Confidence Interval: Gompertz Top1
+
+```{r boot_gom2, echo=TRUE,message=FALSE}
+head(gom_values_ft)
+```
+
+
+## Results
+```{r,echo=FALSE}
+Data <- c(rep("FT",4),"3pt","2pt")
+r <- c(1,1,3,3,1,1)
+Method <- c("Constant","Gompertz", "Constant", "Gompertz","Constant","Gompertz")
+Upper.Or.Lower <- c(rep("Upper",4),rep("Lower",2))
+Current.Record <- c(rep(0.981,4),0.441,0.447)
+Limit <- c(0.992,0.996,0.997,0.995,0.325,0.429)
+CI.95.Perc <- c("(0.952,1)","(0.969,1)","(0.960,1)","(0.975,1)","(0.045,0.427)","(0.001,0.544)")
+
+dtable <- data.frame(Data,r,Method,Upper.Or.Lower,Current.Record,Limit,CI.95.Perc)
+
+library(knitr)
+
+knitr::kable(dtable[1:2,], booktabs = TRUE)
+```
+
+
+## Optimizing Parameters: Gompertz Top3
+- Parameters for the GEV distribution are fitted to the data through the optimization method Nelder Mead using maximum loglikelihood estimation (MLE) criteria.
+- An ultimate upper limit is then calculated using the MLE parameters.
+```{r optim_gom_top3, echo=TRUE,message=FALSE, eval=FALSE}
+source("functions.R")
+
+mle <- optim(init,gevrloglik, data=top3, control=list(fnscale=-1, trace=TRUE, maxit=999))
+mle$par
+
+gom_limit_ft_top3 <- mle$par[1]+mle$par[2] - mle$par[5]/mle$par[6]; gom_limit_ft_top3
+```
+
+
+
+```{r top3gom, echo=FALSE, message=FALSE, include=FALSE}
+#########################
+####Top 3 ft Gompertz####
+#########################
+
+setwd("C:/Users/Tom Kennon/Documents/UCONN/STATS UG Thesis Research/R Code/Undergraduate-Thesis-Research")
+
+bdat <- read.csv("ft10.csv",header=TRUE, sep=",")
+#free throw percentages
+
+bdat <- bdat[bdat$Lg=="NBA",]
+
+g_dat <- bdat[c(1,4,6,8,10,12,14,16,18,20,22)]
+library(dplyr)
+g_dat <- g_dat %>% arrange(-row_number())
+
+
+
+library(splines2)
+library(eva)
+library(Matrix)
+
+df <- 6
+
+lines1 <- iSpline(1:68, df) #all positive values
+lines1 <- as.data.frame(lines1)
+names(lines1) <- paste0("x",1:df)
+
+source("functions.R")
+
+splines_fit_nloc <- gevr_fit_nloc(g_dat[1:68,2:4], locvars = lines1,
+                                  locform = ~ x1 + x2 + x3 + x4 + x5 + x6)
+#splines_fit_nloc$par.ests #all location values are pos.
+## Location (Intercept)          Location x1          Location x2          Location x3 
+##         8.719896e-01         6.217385e-03         2.164180e-02         2.652640e-02 
+##          Location x4          Location x5          Location x6    Scale (Intercept) 
+##         6.491648e-04         2.968156e-03         1.129181e-06         2.265565e-02 
+##    Shape (Intercept) 
+##        -3.952965e-01
+
+
+plot(rate <- as.matrix(lines1) %*% splines_fit_nloc$par.ests[2:(df+1)]
+     + splines_fit_nloc$par.ests[1])
+
+
+# My guess at parameter values
+curve(0.86 + .06* exp(-7.5 * exp(-.1*x)),0, 73, add=TRUE, col="red")
+
+time <- as.numeric(1:length(rate))
+
+gom_guesses <- c(z=0.86,a=0.06, b=7.5, c=0.1)
+lapply(gom_guesses,as.numeric)
+
+
+nls_model <- nls ( rate ~ z + a*exp(-b*exp(-c*time)),trace=TRUE,start=gom_guesses)
+nls_model
+## Nonlinear regression model
+##   model: rate ~ z + a * exp(-b * exp(-c * time))
+##    data: parent.frame()
+##       z       a       b       c 
+## 0.87189 0.06056 5.53163 0.07543 
+##  residual sum-of-squares: 8.891e-06
+## 
+## Number of iterations to convergence: 6 
+## Achieved convergence tolerance: 6.505e-07
+
+
+
+plot(rate <- as.matrix(lines1) %*% splines_fit_nloc$par.ests[2:(df+1)]
+     + splines_fit_nloc$par.ests[1], ylim = c(0.86,0.93))
+curve(gompertz(x, theta=coef(nls_model)), col="red", add=TRUE)
+
+splines_fit_nloc$par.ests[(df+2):(df+3)]
+## Scale (Intercept) Shape (Intercept) 
+##        0.02265565       -0.39529647
+
+
+init <- c(coef(nls_model),splines_fit_nloc$par.ests[df+2],splines_fit_nloc$par.ests[df+3])
+
+
+top3 <- cbind(g_dat[1:68,2:4])
+mle <- optim(init,gevrloglik, data=top3, control=list(fnscale=-1, trace=TRUE, maxit=999))
+mle$par
+##                 z                 a                 b                 c Scale (Intercept) 
+##        0.87189285        0.06056206        5.53162775        0.07542787        0.02265565 
+## Shape (Intercept) 
+##       -0.36072380
+
+
+ts.plot(g_dat[1:68,2:4], ylab="Free Throw Percentage",xlab="Season")
+title("NBA FT Top3 (Gompertz)")
+curve(gompertz(x, theta=mle$par), col=c("purple"), add=TRUE)
+
+
+
+gom_limit_ft_top3 <- mle$par[1]+mle$par[2] - mle$par[5]/mle$par[6]; gom_limit_ft_top3
+## 0.995
+
+library(dplyr)
+
+set.seed(12345)
+#gom_values_ft_top3 <- sim_param2(r=3,boots=1750,data=g_dat[1:68,2:4],obs_par=mle$par); gom_values_ft_top3
+#gom_values_ft_top3 = as.data.frame(gom_values_ft_top3)
+#gom_values_ft_top3 <- gom_values_ft_top3[!gom_values_ft_top3$V9==1,]
+#gom_values_ft_top3 <- head(gom_values_ft_top3,n=1000)
+#write.csv(gom_values_ft_top3,"gom_values_ft_top3.csv")
+gom_values_ft_top3 <- read.csv("gom_values_ft_top3.csv")
+gom_values_ft_top3 <- gom_values_ft_top3[,-1]
+gom_values_ft_top3 <- mutate(gom_values_ft_top3, limit = V1 + V2 - V5/V6)
+
+gom_limits_ft_top3 <- gom_values_ft_top3$limit
+gom_limits_ft_top3 <- gom_limits_ft_top3[sort.list(gom_limits_ft_top3)]
+
+gom_lb_ft_top3 <- gom_limits_ft_top3[25]; gom_lb_ft_top3
+## 0.9745179
+
+gom_ub_ft_top3 <- gom_limits_ft_top3[975]; gom_ub_ft_top3
+## 1
+
+
+
+
+
+mle$value # gompertz loglikelihood fitting
+## 625.1386
+
+test0 = mle$value
+
+
+
+time = 1:68
+mu <- gompertz(time, mle$par[1:4])
+non_loc_data = g_dat[1:68,2:4] - mu
+
+ks = ks.test(non_loc_data,pgev,scale=mle$par[5],shape=mle$par[6]); ks
+ks$statistic
+## 0.4226147
+
+length(gom_values_ft_top3$V8[gom_values_ft_top3$V8 >= ks$statistic])/nrow(gom_values_ft_top3) # approx. pvalue
+## 0.421
+
+hist(gom_values_ft_top3$V8,main="NBA FT Top3 (Gompertz): Histogram of KS Statistics",xlab="KS Statistics")
+abline(v = ks$statistic, lty = 2,col="purple")
+```
+
+
+
+
+## Optimizing Parameters: Gompertz Top3
+
+```{r gom_top3_2, echo=TRUE,message=FALSE}
+mle
+
+gom_limit_ft_top3 <- mle$par[1]+mle$par[2] - mle$par[5]/mle$par[6]; gom_limit_ft_top3
+## 0.995
+
+```
+
+
+## Bootstrap Confidence Interval: Gompertz Top3
+- A 95% boostrap confidence interval is calculated by running 1000 bootstraps using this same method on 1000 unique datasets randomly generated using the MLE parameters for the GEV distribution found.
+```{r boot_gom_top3, echo=TRUE,message=FALSE, eval=FALSE}
+library(dplyr)
+
+set.seed(12345)
+values <- sim_param(r=3,boots=1000,data=top3,obs_par=mle$par); values
+values = as.data.frame(values)
+values <- mutate(values, limit = V1 + V2 - V5/V6)
+
+limits <- values$limit
+limits <- limits[sort.list(limits)]
+
+lb <- limits[25]; lb
+
+ub <- limits[975]; ub
+
+```
+
+## Gompertz Top3 MLE fitting to the Data
+
+```{r fig.width=10, fig.height=4,echo=FALSE}
+library(png)
+library(grid)
+img <- readPNG("NBA FT Top3 (Gompertz).png")
+grid.raster(img)
+```
+
+
+## Gompertz Top3 Goodness of Fit
+- approx. pvalue = 0.421
+
+```{r fig.width=10, fig.height=4,echo=FALSE}
+library(png)
+library(grid)
+img <- readPNG("NBA FT Top3 (Gompertz) Histogram of KS Statistics.png")
+grid.raster(img)
+```
+
+## Results
+```{r,echo=FALSE}
+Data <- c(rep("FT",4),"3pt","2pt")
+r <- c(1,1,3,3,1,1)
+Method <- c("Constant","Gompertz", "Constant", "Gompertz","Constant","Gompertz")
+Upper.Or.Lower <- c(rep("Upper",4),rep("Lower",2))
+Current.Record <- c(rep(0.981,4),0.441,0.447)
+Limit <- c(0.992,0.996,0.997,0.995,0.325,0.429)
+CI.95.Perc <- c("(0.952,1)","(0.969,1)","(0.960,1)","(0.975,1)","(0.045,0.427)","(0.001,0.544)")
+
+dtable <- data.frame(Data,r,Method,Upper.Or.Lower,Current.Record,Limit,CI.95.Perc)
+
+library(knitr)
+
+knitr::kable(dtable[1:4,], booktabs = TRUE)
+```
+
+## Constant 3pt MLE fitting to the Data
+
+```{r fig.width=10, fig.height=4,echo=FALSE}
+library(png)
+library(grid)
+img <- readPNG("NBA 3pt (Constant).png")
+grid.raster(img)
+```
+
+
+## Constant 3pt Goodness of Fit
+
+- approx. pvalue = 0.989
+
+```{r fig.width=10, fig.height=4,echo=FALSE}
+library(png)
+library(grid)
+img <- readPNG("NBA 3pt (Constant) Histogram of KS Statistics.png")
+grid.raster(img)
+```
+
+
+## Results
+```{r,echo=FALSE}
+Data <- c(rep("FT",4),"3pt","2pt")
+r <- c(1,1,3,3,1,1)
+Method <- c("Constant","Gompertz", "Constant", "Gompertz","Constant","Gompertz")
+Upper.Or.Lower <- c(rep("Upper",4),rep("Lower",2))
+Current.Record <- c(rep(0.981,4),0.441,0.447)
+Limit <- c(0.992,0.996,0.997,0.995,0.325,0.429)
+CI.95.Perc <- c("(0.952,1)","(0.969,1)","(0.960,1)","(0.975,1)","(0.045,0.427)","(0.001,0.544)")
+
+dtable <- data.frame(Data,r,Method,Upper.Or.Lower,Current.Record,Limit,CI.95.Perc)
+
+library(knitr)
+
+knitr::kable(dtable[1:5,], booktabs = TRUE)
+```
+
+## Gompertz 2pt MLE fitting to the Data
+
+```{r fig.width=10, fig.height=4,echo=FALSE}
+library(png)
+library(grid)
+img <- readPNG("NBA 2pt (Gompertz).png")
+grid.raster(img)
+```
+
+
+## Gompertz 2pt Goodness of Fit
+
+- approx. pvalue = 0.961
+
+```{r fig.width=10, fig.height=4,echo=FALSE}
+library(png)
+library(grid)
+img <- readPNG("NBA 2pt (Gompertz) Histogram of KS Statistics.png")
+grid.raster(img)
+```
+
+
+
+## Results
+```{r,echo=FALSE}
+Data <- c(rep("FT",4),"3pt","2pt")
+r <- c(1,1,3,3,1,1)
+Method <- c("Constant","Gompertz", "Constant", "Gompertz","Constant","Gompertz")
+Upper.Or.Lower <- c(rep("Upper",4),rep("Lower",2))
+Current.Record <- c(rep(0.981,4),0.441,0.447)
+Limit <- c(0.992,0.996,0.997,0.995,0.325,0.429)
+CI.95.Perc <- c("(0.952,1)","(0.969,1)","(0.960,1)","(0.975,1)","(0.045,0.427)","(0.001,0.544)")
+
+dtable <- data.frame(Data,r,Method,Upper.Or.Lower,Current.Record,Limit,CI.95.Perc)
+
+library(knitr)
+
+knitr::kable(dtable, booktabs = TRUE)
+```
+
+
+
+## Some Helpful Resources
+- basketball statistics website:
+    + https://www.basketball-reference.com/
+- {eva} R package:
+    + https://cran.r-project.org/web/packages/eva/eva.pdf
+    
+    
+    
+
+
