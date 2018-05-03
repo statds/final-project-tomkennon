@@ -4,7 +4,7 @@ This is a repository for my Undergraduate Honors Thesis at UConn.  This analysis
 
 ## Brief Description of Project
 
-Extreme value theory is used to estimate the ultimate upper or lower limit for an NBA season's league leading player's shooting percentage (free throw, 2 point field goal, and 3 point field goal).  The limits are found using the generalized extreme value distribution with parameters optimized using the Nelder-Mead method maximizing the loglikelihood.  Two different techniques are applied in this project to finding an optimal generalized extreme value distribution location parameter $\mu$ including a constant and a Gompertz curve.  A 95% bootstrap confidence interval is calculated for these limits.  Kolmogorov-Smirnov tests and a Score test are run as well through the bootstrapped datasets to evaluate goodness of fits.
+Extreme value theory is used to estimate the ultimate upper or lower limit for an NBA season's league leading player's shooting percentage (free throw, 2 point field goal, and 3 point field goal).  The limits are found using the generalized extreme value distribution with parameters optimized using the Nelder-Mead method maximizing the loglikelihood.  Two different techniques are applied in this project to finding an optimal generalized extreme value distribution location parameter μ including a constant and a Gompertz curve.  A 95% bootstrap confidence interval is calculated for these limits.  Kolmogorov-Smirnov tests and a Score test are run as well through the bootstrapped datasets to evaluate goodness of fits.
 
 
 ## Files
