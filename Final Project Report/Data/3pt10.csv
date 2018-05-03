@@ -1,0 +1,48 @@
+Season,Lg,1st,perc1,2nd,perc2,3rd,perc3,4th,perc4,5th,perc5,6th,perc6,7th,perc7,8th,perc8,9th,perc9,10th,perc10
+2016-17,NBA,K. Korver ,0.4513,A. Crabbe ,0.4437,J. Ingles ,0.4409,O. Porter ,0.4340,J. Redick ,0.4295,S. Curry ,0.4255,C. McCollum ,0.4214,G. Harris ,0.4196,L. Babbitt ,0.4143,K. Thompson ,0.4142
+2015-16,NBA,J. Redick ,0.4751,S. Curry ,0.4537,K. Leonard ,0.4433,J. Bayless ,0.4372,D. McDermott ,0.4247,K. Thompson ,0.4246,J. Dudley ,0.4202,C. McCollum ,0.4174,C. Parsons ,0.4143,J. Calderon ,0.4138
+2014-15,NBA,K. Korver ,0.4922,E. Gordon ,0.4476,S. Curry ,0.4427,K. Thompson ,0.4385,J. Redick ,0.4367,A. Morrow ,0.4338,D. Green ,0.4179,K. Irving ,0.4153,B. Beal ,0.4093,M. Dunleavy ,0.4068
+2013-14,NBA,K. Korver ,0.4719,M. Miller ,0.4592,A. Morrow ,0.4513,J. Calderon ,0.4494,M. Belinelli ,0.4300,A. Afflalo ,0.4267,P. Mills ,0.4245,S. Curry ,0.4244,K. Thompson ,0.4168,S. Hawes ,0.4156
+2012-13,NBA,J. Calderon ,0.4610,K. Korver ,0.4565,S. Curry ,0.4533,E. Ilyasova ,0.4439,S. Nash ,0.4385,S. Battier ,0.4304,D. Green ,0.4286,M. Dunleavy ,0.4281,W. Green ,0.4277,K. Martin ,0.4259
+2011-12,NBA,S. Novak ,0.4716,E. Ilyasova ,0.4554,S. Curry ,0.4545,R. Allen ,0.4530,M. Miller ,0.4530,B. Rush ,0.4521,W. Green ,0.4425,J. Farmar ,0.4400,D. Green ,0.4359,K. Korver ,0.4354
+2010-11,NBA,M. Bonner ,0.4565,R. Allen ,0.4444,S. Curry ,0.4415,L. Ridnour ,0.4402,M. Bibby ,0.4397,R. Jefferson ,0.4397,J. Jones ,0.4286,A. Afflalo ,0.4234,R. Williams ,0.4232,A. Morrow ,0.4231
+2009-10,NBA,K. Korver ,0.5364,M. Miller ,0.4795,D. Gibson ,0.4765,J. Dudley ,0.4580,A. Morrow ,0.4560,C. Frye ,0.4388,S. Curry ,0.4368,A. Afflalo ,0.4337,M. Williams ,0.4286,S. Nash ,0.4261
+2008-09,NBA,A. Morrow ,0.4674,J. Nelson ,0.4530,T. Murphy ,0.4497,K. Azubuike ,0.4476,B. Simmons ,0.4466,M. Okur ,0.4455,E. House ,0.4441,M. Bonner ,0.4403,D. Augustin ,0.4390,S. Nash ,0.439
+2007-08,NBA,J. Kapono ,0.4831,S. Nash ,0.4698,J. Jones ,0.4439,P. Stojakovic ,0.4408,D. Gibson ,0.4403,R. Hamilton ,0.4397,A. Parker ,0.4375,S. Vujacic ,0.4370,M. Carroll ,0.4357,M. Miller ,0.4318
+2006-07,NBA,J. Kapono ,0.5143,S. Nash ,0.4548,B. Barry ,0.4460,L. Head ,0.4414,A. Parker ,0.4406,J. Terry ,0.4378,L. Barbosa ,0.4338,A. Harrington ,0.4334,K. Korver ,0.4300,E. House ,0.4286
+2005-06,NBA,R. Hamilton ,0.4583,T. Lue ,0.4567,L. Barbosa ,0.4439,M. James ,0.4424,R. Bell ,0.4417,S. Nash ,0.4386,B. Gordon ,0.4346,C. Billups ,0.4329,B. Bowen ,0.4245,J. Nelson ,0.4242
+2004-05,NBA,F. Hoiberg ,0.4828,J. Johnson ,0.4784,C. Mobley ,0.4386,M. Miller ,0.4334,D. Jones ,0.4319,S. Nash ,0.4312,J. Barry ,0.4303,C. Billups ,0.4264,E. Piatkowski ,0.4254,J. Terry ,0.4204
+2003-04,NBA,A. Peeler ,0.4823,B. Barry ,0.4524,B. Cardinal ,0.4435,F. Hoiberg ,0.4419,A. McKie ,0.4360,P. Stojakovic ,0.4332,A. Houston ,0.4307,H. Turkoglu ,0.4191,C. Jacobsen ,0.4167,C. Ward ,0.4078
+2002-03,NBA,B. Bowen ,0.4410,M. Redd ,0.4375,W. Person ,0.4329,D. Wesley ,0.4241,W. Szczerbiak ,0.4207,S. Nash ,0.4126,M. Harpring ,0.4125,A. Peeler ,0.4104,M. Bibby ,0.4088,E. Jones ,0.4066
+2001-02,NBA,S. Smith ,0.4715,J. Barry ,0.4690,E. Piatkowski ,0.4664,W. Szczerbiak ,0.4555,S. Nash ,0.4548,H. Davis ,0.4524,T. Lue ,0.4468,M. Redd ,0.4444,W. Person ,0.4441,R. Allen ,0.4337
+2000-01,NBA,B. Barry ,0.4760,J. Stockton* ,0.4621,S. Williams ,0.4586,H. Davis ,0.4561,D. Ferry ,0.4487,T. Kukoc ,0.4459,P. Garrity ,0.4330,R. Allen ,0.4325,R. Lewis ,0.4316,D. Curry ,0.4276
+1999-00,NBA,H. Davis ,0.4910,J. Hornacek ,0.4783,M. Bullard ,0.4463,R. Rogers ,0.4389,A. Houston ,0.4362,T. Porter ,0.4348,L. Hunter ,0.4319,T. Murray ,0.4297,J. Barry ,0.4286,W. Person ,0.424
+1998-99,NBA,D. Curry ,0.4759,C. Mullin* ,0.4650,H. Davis ,0.4514,W. Williams ,0.4375,D. Ellis ,0.4332,M. Dickerson ,0.4329,J. Hornacek ,0.4198,C. Robinson ,0.4173,G. McCloud ,0.4157,J. Buechler ,0.4122
+1997-98,NBA,D. Ellis ,0.4635,J. Hornacek ,0.4409,C. Mullin* ,0.4403,H. Davis ,0.4391,S. Kerr ,0.4385,G. Rice ,0.4333,W. Person ,0.4295,R. Miller* ,0.4293,D. Curry ,0.4207,E. Recasner ,0.4189
+1996-97,NBA,G. Rice ,0.4705,S. Kerr ,0.4641,K. Johnson ,0.4406,J. Dumars* ,0.4323,M. Richmond* ,0.4277,R. Miller* ,0.4272,D. Curry ,0.4257,T. Mills ,0.4217,M. Elie ,0.4196,V. Lenard ,0.414
+1995-96,NBA,T. Legler ,0.5224,S. Kerr ,0.5148,H. Davis ,0.4757,B. Armstrong ,0.4734,J. Hornacek ,0.4664,B. Price ,0.4618,B. Phills ,0.4408,T. Dehere ,0.4399,M. Richmond* ,0.4369,A. Houston ,0.4273
+1994-95,NBA,S. Kerr ,0.5235,D. Schrempf ,0.5138,D. Barros ,0.4635,H. Davis ,0.4549,J. Stockton* ,0.4493,H. Hawkins ,0.4396,W. Person ,0.4361,K. Smith ,0.4290,B. Armstrong ,0.4269,D. Curry ,0.4266
+1993-94,NBA,T. Murray ,0.4587,B. Armstrong ,0.4444,R. Miller* ,0.4212,S. Kerr ,0.4194,S. Skiles ,0.4121,E. Murdock ,0.4107,M. Richmond* ,0.4071,K. Smith ,0.4045,D. Curry ,0.4021,H. Davis ,0.4015
+1992-93,NBA,B. Armstrong ,0.4532,C. Mullin* ,0.4511,D. Petrovic* ,0.4491,K. Smith ,0.4384,J. Les ,0.4286,M. Price ,0.4164,T. Porter ,0.4145,D. Ainge ,0.4032,D. Scott ,0.4030,S. Smith ,0.4015
+1991-92,NBA,D. Barros ,0.4462,D. Petrovic* ,0.4440,J. Hornacek ,0.4392,M. Iuzzolino ,0.4338,D. Ellis ,0.4195,C. Ehlo ,0.4132,J. Stockton* ,0.4069,L. Bird* ,0.4063,D. Curry ,0.4044,H. Hawkins ,0.3974
+1990-91,NBA,J. Les ,0.4610,T. Tucker ,0.4183,J. Hornacek ,0.4178,T. Porter ,0.4153,S. Skiles ,0.4079,D. Ainge ,0.4064,H. Hawkins ,0.4000,L. Bird* ,0.3889,G. Rice ,0.3859,T. Hardaway ,0.3849
+1989-90,NBA,S. Kerr ,0.5069,C. Hodges ,0.4807,D. Petrovic* ,0.4595,J. Sundvold ,0.4400,B. Scott ,0.4227,H. Hawkins ,0.4200,C. Ehlo ,0.4194,J. Stockton* ,0.4159,R. Miller* ,0.4144,F. Lever ,0.4138
+1988-89,NBA,J. Sundvold ,0.5217,D. Ellis ,0.4779,M. Price ,0.4408,H. Hawkins ,0.4277,C. Hodges ,0.4167,E. Johnson ,0.4128,R. Berry ,0.4063,H. Pressley ,0.4034,R. Miller* ,0.4016,B. Scott ,0.399
+1987-88,NBA,C. Hodges ,0.4914,M. Price ,0.4865,J. Long ,0.4416,G. Henderson ,0.4233,K. Tripucka ,0.4189,D. Ainge ,0.4146,L. Bird* ,0.4135,T. Tucker ,0.4132,D. Ellis ,0.4131,L. Wood ,0.4094
+1986-87,NBA,K. Vandeweghe ,0.4815,D. Schrempf ,0.4783,D. Ainge ,0.4427,B. Scott ,0.4362,T. Tucker ,0.4224,K. McKenna ,0.4194,L. Bird* ,0.4000,M. Cooper ,0.3853,S. Floyd ,0.3842,M. McGee ,0.3755
+1985-86,NBA,C. Hodges ,0.4506,T. Tucker ,0.4505,E. Grunfeld ,0.4262,L. Bird* ,0.4227,W. Free ,0.4201,K. Macy ,0.4113,M. Cooper ,0.3865,D. Ellis ,0.3642,K. McKenna ,0.3600,B. Davis ,0.3596
+1984-85,NBA,B. Scott ,0.4333,L. Bird* ,0.4275,B. Davis ,0.4087,T. Tucker ,0.4028,D. Ellis ,0.3853,A. Toney ,0.3714,W. Free ,0.3679,M. Evans ,0.3631,D. Griffith ,0.3580,D. Buse ,0.3563
+1983-84,NBA,D. Griffith ,0.3611,M. Evans ,0.3596,J. Moore ,0.3218,M. Cooper ,0.3140,R. Williams ,0.3086,R. Sobers ,0.2613,,,,,,,,
+1982-83,NBA,M. Dunleavy ,0.3454,I. Thomas* ,0.2880,D. Griffith ,0.2879,A. Leavell ,0.2400,,,,,,,,,,,,
+1981-82,NBA,C. Russell ,0.4386,A. Toney ,0.4237,K. Macy ,0.3900,B. Winters ,0.3871,D. Buse ,0.3862,M. Dunleavy ,0.3837,M. Aguirre ,0.3521,K. Grevey ,0.3415,M. Bratz ,0.3333,J. Hassett ,0.3318
+1980-81,NBA,B. Taylor ,0.3826,F. Williams ,0.3404,J. Hassett ,0.3397,M. Bratz ,0.3373,H. Bibby ,0.3368,K. Grevey ,0.3309,C. Ford ,0.3303,S. Wedman ,0.3247,,,,
+1979-80,NBA,F. Brown ,0.4432,C. Ford ,0.4268,L. Bird* ,0.4056,J. Roche ,0.3798,B. Taylor ,0.3766,B. Winters ,0.3725,K. Grevey ,0.3696,J. Hassett ,0.3485,R. Barry* ,0.3303,F. Williams ,0.3281
+1975-76,ABA,B. Taylor ,0.4211,L. Dampier* ,0.3678,B. Keller ,0.3524,D. Buse ,0.3462,J. Neumann ,0.3413,J. Erving* ,0.3301,B. Averitt ,0.3125,F. Lewis ,0.2925,B. Lamar ,0.2791,M. Flynn ,0.2525
+1974-75,ABA,B. Shepherd ,0.4196,L. Dampier* ,0.3958,A. Smith ,0.3617,G. McGinnis* ,0.3543,R. Brown* ,0.3500,J. Erving* ,0.3333,B. Keller ,0.3333,W. Jabali ,0.3212,D. Buse ,0.3089,S. Johnson ,0.303
+1973-74,ABA,L. Dampier* ,0.3871,B. Keller ,0.3817,W. Jabali ,0.3659,R. Brown* ,0.3613,G. Combs ,0.3537,G. Carter ,0.3441,J. Beasley ,0.3438,J. Roche ,0.3429,D. Buse ,0.3364,B. Shepherd ,0.3218
+1972-73,ABA,S. Hill ,0.3913,G. Lehmann ,0.3881,G. Combs ,0.3806,R. Brown* ,0.3559,L. Dampier* ,0.3484,J. Hamilton ,0.3455,F. Lewis ,0.3455,R. Jones ,0.3386,J. Roche ,0.3301,J. Beasley ,0.3258
+1971-72,ABA,R. Robbins ,0.4085,G. Combs ,0.4055,A. Tucker ,0.3659,L. Dampier* ,0.3605,W. Jabali ,0.3579,G. Lehmann ,0.3568,J. Hamilton ,0.3485,S. Jones ,0.3333,B. Keller ,0.3314,S. Swift ,0.33
+1970-71,ABA,G. Lehmann ,0.4031,D. Carrier ,0.3913,S. Jones ,0.3704,L. Dampier* ,0.3679,G. Combs ,0.3667,B. Keller ,0.3652,L. Jones ,0.3629,R. Boone ,0.3551,R. Jones ,0.3474,J. Brisker ,0.3371
+1969-70,ABA,D. Carrier ,0.3750,L. Dampier* ,0.3613,J. Congdon ,0.3539,G. Combs ,0.3514,M. Barrett ,0.3444,R. Brown* ,0.3333,G. Lehmann ,0.3217,G. Stone ,0.3155,B. Verga ,0.3070,S. Swift ,0.304
+1968-69,ABA,D. Carrier ,0.3788,G. Stone ,0.3784,J. Rayl ,0.3696,G. Combs ,0.3605,L. Dampier* ,0.3605,G. Lehmann ,0.3504,S. Johnson ,0.3497,R. Perry ,0.3490,B. Warren ,0.3483,S. Jones ,0.3444
+1967-68,ABA,S. Jones ,0.4259,W. Bialosuknia ,0.3973,D. Carrier ,0.3574,R. Perry ,0.3483,C. Vaughn ,0.3341,J. Rayl ,0.3257,L. Selvage ,0.3189,S. Johnson ,0.3165,B. Warley ,0.3133,H. Hale ,0.3125
